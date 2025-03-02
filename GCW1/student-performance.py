@@ -232,6 +232,27 @@ class AdaBoostModel:
         confusion_table(y_pred, self.y_test)
 
         return y_pred
+    
+    def plot_feature_importance(self):
+        # Train an AdaBoost model for feature importance visualization
+        base_estimator = DecisionTreeClassifier(max_depth=3)
+        ada = AdaBoostClassifier(estimator=base_estimator, n_estimators=self.n_estimators, learning_rate=0.01 , random_state=self.random_state)
+
+        ada.fit(self.X_train, self.y_train)
+
+        importances = ada.feature_importances_
+
+        # plot the most important features
+        indices = np.argsort(importances)
+        top_importances = pd.Series(importances[indices[-10:]], index=ada.feature_names_in_[indices[-10:]])
+
+        fig, ax = subplots()
+
+        top_importances.plot.bar(ax=ax)
+        ax.set_ylabel("Mean decrease in impurity")
+
+        plt.tight_layout()
+        plt.show()
 
 
 # -----------------------
