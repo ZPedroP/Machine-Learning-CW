@@ -1,239 +1,329 @@
 import numpy as np
 import pandas as pd
-from matplotlib.pyplot import subplots
-import sklearn.linear_model as skl
-from sklearn.preprocessing import label_binarize
-from sklearn.preprocessing import StandardScaler
-from ISLP import load_data
-from ISLP import confusion_table
-from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import accuracy_score, classification_report, auc, roc_curve,roc_auc_score
 import matplotlib.pyplot as plt
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.tree import DecisionTreeClassifier
-from sklearn.ensemble import AdaBoostClassifier, GradientBoostingClassifier
-from sklearn.model_selection import train_test_split
-from sklearn.model_selection import cross_val_score
-from sklearn.model_selection import GridSearchCV
+from matplotlib.pyplot import subplots
+from sklearn.tree import DecisionTreeClassifier, plot_tree
+from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier, GradientBoostingClassifier
+from sklearn.model_selection import train_test_split, GridSearchCV
+from sklearn.metrics import accuracy_score
+from ISLP import confusion_table
 from sklearn.preprocessing import OneHotEncoder
+from sklearn.impute import SimpleImputer
 from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
-from sklearn.impute import SimpleImputer
-from sklearn import tree
+
+# --------------------------------------------------
+# Data processor to load and preprocess the dataset
+# --------------------------------------------------
+
+class DataProcessor:
+    def __init__(self, file_path):
+        self.file_path = file_path
+        self.df = None
+        self.X = None
+        self.y = None
+
+    def load_data(self):
+        # Read CSV using semicolon delimiter and proper header assignment
+        column_names = pd.read_csv(self.file_path, nrows=0, delimiter=';').columns.tolist()
+        self.df = pd.read_csv(self.file_path, skiprows=1, delimiter=';', names=column_names)
+
+        # Features: all but the last 3 columns; Targets: last 3 columns (grades)
+        feature_columns = column_names[:-3]
+        target_columns = column_names[-3:]
+
+        # Split the DataFrame into features (X) and target (y)
+        self.X = self.df[feature_columns]
+        y_df = self.df[target_columns]
+
+        # Use only the final grade: drop the first two grade columns and rename the remaining one
+        y_df = y_df.drop(y_df.columns[:2], axis=1).rename(columns={y_df.columns[0]: "Final Grade"})
+        y_array = np.reshape(y_df, (-1,))
+
+        # Binarize: grade < 10 -> 0 (fail), grade >= 10 -> 1 (pass)
+        self.y = np.where(y_array < 10, 0, 1)
+        return self.X, self.y
+
+    def preprocess(self, X):
+        # Identify categorical columns
+        categorical_cols = X.select_dtypes(include=['object']).columns
+
+        # Preprocessing for categorical data
+        categorical_transformer = Pipeline(steps=[
+            ('imputer', SimpleImputer(strategy='constant', fill_value='missing')),
+            ('onehot', OneHotEncoder(handle_unknown='ignore'))
+        ])
+
+        # Bundle preprocessing for numerical and categorical data
+        preprocessor = ColumnTransformer(
+            transformers=[('cat', categorical_transformer, categorical_cols)],
+            remainder='passthrough'
+        )
+
+        # Fit the preprocessing pipeline on the data
+        preprocessor.fit(X)
+
+        # Transform the data
+        X_preprocessed = preprocessor.transform(X)
+
+        # Get the feature names after one-hot encoding
+        feature_names = preprocessor.get_feature_names_out()
+
+        # Convert the transformed data back to DataFrames
+        X_preprocessed_df = pd.DataFrame(X_preprocessed, columns=feature_names, index=X.index)
+
+        return X_preprocessed_df
 
 
-## Load the data
+# -------------------
+# Decision Tree Model
+# -------------------
 
-# Load data from CSV file into a DataFrame
-file_path = './datasets/student-mat.csv'
-df = pd.read_csv(file_path)
+class DecisionTreeModel:
+    def __init__(self, X_train, y_train, X_test, y_test, random_state=67):
+        self.X_train = X_train
+        self.y_train = y_train
+        self.X_test = X_test
+        self.y_test = y_test
+        self.random_state = random_state
+        self.best_estimator_ = None
 
-column_names = pd.read_csv(file_path, nrows=0, delimiter=';').columns.tolist()
+    def fine_tune(self, param_grid={"ccp_alpha": [1, 0.1, 0.01, 0.001, 0.0001]}, cv=20):
+        grid = GridSearchCV(DecisionTreeClassifier(random_state=self.random_state),
+                            param_grid, scoring='accuracy', cv=cv)
 
-# Load the CSV file again, skipping the first row and using it as column names
-df = pd.read_csv(file_path, skiprows=1, delimiter=';', names=column_names)
+        grid.fit(self.X_train, self.y_train)
 
-# Get the column names for features and target using slicing
-feature_columns = column_names[:-3]
-target_columns = column_names[-3:]
+        self.best_estimator_ = grid.best_estimator_
+        print("Decision Tree Best Params:", grid.best_params_)
 
-# Split the DataFrame into features (X) and target (y)
-X = df[feature_columns]
-y = df[target_columns]
+        for mean, std, params in zip(grid.cv_results_["mean_test_score"],
+                                     grid.cv_results_["std_test_score"],
+                                     grid.cv_results_["params"]):
+            print("%0.3f (+/-%0.03f) for %r" % (mean, std, params))
 
-print_corr = 0
+        return self.best_estimator_
 
-if print_corr:
-    # Select the three columns you want to compute the correlation for
-    selected_columns = y[['G1', 'G2', 'G3']]
+    def predict(self):
+        if self.best_estimator_ is None:
+            raise ValueError("Model not tuned. Call fine_tune() first.")
 
-    # Compute the correlation matrix
-    correlation_matrix = selected_columns.corr()
-    print(correlation_matrix)
+        y_pred = self.best_estimator_.predict(self.X_test)
+        print("Decision Tree Accuracy:", accuracy_score(self.y_test, y_pred))
 
-# Drop the first two columns of the y dataframe
-y = y.drop(y.columns[:2], axis=1)
+        confusion_table(y_pred, self.y_test)
 
-# Rename the remaining column to "Final Grade"
-y = y.rename(columns={y.columns[0]: "Final Grade"})
+        return y_pred
 
-# Reshape y to a single column
-y = np.reshape(y, (-1,))
+    def plot_tree(self, ccp_alpha=0.01):
+        # Train a decision tree with the chosen complexity parameter and visualize it
+        dt = DecisionTreeClassifier(ccp_alpha=ccp_alpha, random_state=self.random_state)
 
-# Convert the target into a binary problem
-y = np.where(y < 10, 0, 1)
+        dt.fit(self.X_train, self.y_train)
 
-y = pd.DataFrame(y).squeeze()
+        fig, ax = subplots(figsize=(4, 4), dpi=300)
+        plot_tree(dt, feature_names=self.X_train.columns, class_names=['0', '1'], filled=True, ax=ax)
 
-# get training/test splits by `train_test_split` function
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3)
-
-# Identify categorical columns
-categorical_cols = X_train.select_dtypes(include=['object']).columns
-
-# Preprocessing for categorical data
-categorical_transformer = Pipeline(steps=[
-    ('imputer', SimpleImputer(strategy='constant', fill_value='missing')),
-    ('onehot', OneHotEncoder(handle_unknown='ignore'))
-])
-
-# Bundle preprocessing for numerical and categorical data
-preprocessor = ColumnTransformer(
-    transformers=[
-        ('cat', categorical_transformer, categorical_cols)
-    ],
-    remainder='passthrough'  # Leave the rest of the columns untouched
-)
-
-# Fit the preprocessing pipeline on the training data
-preprocessor.fit(X_train)
-
-# Transform the training and test data
-X_train_preprocessed = preprocessor.transform(X_train)
-X_test_preprocessed = preprocessor.transform(X_test)
-
-# Convert the transformed data back to DataFrames
-# Get the feature names after one-hot encoding
-feature_names = preprocessor.get_feature_names_out()
-
-X_train_preprocessed_df = pd.DataFrame(X_train_preprocessed, columns=feature_names, index=X_train.index)
-X_test_preprocessed_df = pd.DataFrame(X_test_preprocessed, columns=feature_names, index=X_test.index)
+        plt.show()
 
 
-## Decision Tree
-# set tuning values
-tuned_parameters = [{"ccp_alpha": [1,0.1,0.01,0.001,0.0001]}]
-treeCV = GridSearchCV(DecisionTreeClassifier(random_state=67), tuned_parameters, scoring='accuracy',cv=20)
-# more details see https://scikit-learn.org/stable/modules/generated/sklearn.tree.DecisionTreeClassifier.html
-treeCV.fit(X_train_preprocessed_df, y_train)
-print("Best parameters set found on validation set:")
-print()
-print(treeCV.best_params_)
-print()
-print("Grid scores on validation set:")
-print()
-means = treeCV.cv_results_["mean_test_score"]
-stds = treeCV.cv_results_["std_test_score"]
-for mean, std, params in zip(means, stds, treeCV.cv_results_["params"]):
-        print("%0.3f (+/-%0.03f) for %r" % (mean, std, params))
+# -------------------
+# Random Forest Model
+# -------------------
 
-# predict test set labels
-ypred_tree = treeCV.predict(X_test_preprocessed_df)
-accuracy_score(y_test,ypred_tree)
+class RandomForestModel:
+    def __init__(self, X_train, y_train, X_test, y_test, n_estimators=500, random_state=0):
+        self.X_train = X_train
+        self.y_train = y_train
+        self.X_test = X_test
+        self.y_test = y_test
+        self.n_estimators = n_estimators
+        self.random_state = random_state
+        self.best_estimator_ = None
 
-confusion_table(ypred_tree, y_test)
+    def fine_tune(self, param_grid={"max_features": [5, 10, 20, 30, 40, 50, "sqrt"]}, cv=10):
+        grid = GridSearchCV(RandomForestClassifier(n_estimators=self.n_estimators, bootstrap=True,
+                                                     oob_score=True, random_state=self.random_state),
+                            param_grid, scoring='accuracy', cv=cv)
 
-# visualise tree
-dt = DecisionTreeClassifier(ccp_alpha=0.01,random_state=67)
-dt_vis=dt.fit(X_train_preprocessed,y_train)
-fn=X_train_preprocessed_df.columns
-cn=['0','1']
-fig, axes = subplots(nrows = 1,ncols = 1,figsize = (4,4), dpi=300)
-tree.plot_tree(dt_vis,
-               feature_names = fn, 
-               class_names=cn,
-               filled = True)
-fig
+        grid.fit(self.X_train, self.y_train)
 
+        self.best_estimator_ = grid.best_estimator_
+        print("Random Forest Best Params:", grid.best_params_)
 
-## Random Forest
+        for mean, std, params in zip(grid.cv_results_["mean_test_score"],
+                                     grid.cv_results_["std_test_score"],
+                                     grid.cv_results_["params"]):
+            print("%0.3f (+/-%0.03f) for %r" % (mean, std, params))
 
-# set tuning values
-tuned_parameters = [{"max_features": [5,10,20,30,40,50,"sqrt"]}]
-rfCV = GridSearchCV(RandomForestClassifier(n_estimators=500,bootstrap=True,oob_score=True,random_state=0), tuned_parameters, scoring='accuracy',cv=10)
-# more details see https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestClassifier.html
-rfCV.fit(X_train_preprocessed_df, y_train)
-print("Best parameters set found on validation set:")
-print()
-print(rfCV.best_params_)
-print()
-print("Grid scores on validation set:")
-print()
-means = rfCV.cv_results_["mean_test_score"]
-stds = rfCV.cv_results_["std_test_score"]
-for mean, std, params in zip(means, stds, rfCV.cv_results_["params"]):
-        print("%0.3f (+/-%0.03f) for %r" % (mean, std, params))
+        return self.best_estimator_
 
-# predict test set labels
-ypred_rf = rfCV.predict(X_test_preprocessed_df)
-accuracy_score(y_test,ypred_rf)
+    def predict(self):
+        if self.best_estimator_ is None:
+            raise ValueError("Model not tuned. Call tune() first.")
 
-confusion_table(ypred_tree, y_test)
+        # predict test set labels
+        y_pred = self.best_estimator_.predict(self.X_test)
+        print("Random Forest Accuracy:", accuracy_score(self.y_test, y_pred))
 
-# get variable importance, e.g. mean decrease in gini index
-rf = RandomForestClassifier(n_estimators=500,max_features=10,bootstrap=True,oob_score=True,random_state=0).fit(X_train_preprocessed_df,y_train)
-rf_importances = rf.feature_importances_
+        confusion_table(y_pred, self.y_test)
 
-#plot the most important features
-index = np.argsort(rf_importances)
-forest_importances = pd.Series(rf_importances[index[-10:]], index=rf.feature_names_in_[index[-10:]])
+        return y_pred
 
-fig, ax = plt.subplots()
-forest_importances.plot.bar()
-ax.set_ylabel("Mean decrease in impurity")
-fig.tight_layout()
+    def plot_feature_importance(self, max_features=10):
+        # Train a Random Forest with fixed max_features to extract and plot feature importances
+        rf = RandomForestClassifier(n_estimators=self.n_estimators, max_features=max_features,
+                                    bootstrap=True, oob_score=True, random_state=self.random_state)
+
+        rf.fit(self.X_train, self.y_train)
+
+        importances = rf.feature_importances_
+
+        # plot the most important features
+        indices = np.argsort(importances)
+        top_importances = pd.Series(importances[indices[-10:]], index=rf.feature_names_in_[indices[-10:]])
+
+        fig, ax = subplots()
+
+        top_importances.plot.bar(ax=ax)
+        ax.set_ylabel("Mean decrease in impurity")
+
+        plt.tight_layout()
+        plt.show()
 
 
-## AdaBoost
+# --------------
+# AdaBoost Model
+# --------------
 
-ada = AdaBoostClassifier(estimator=DecisionTreeClassifier(max_depth=3), n_estimators=100, random_state=0)
-# more details see https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.AdaBoostClassifier.html
-# set tuning values
-tuned_parameters = [{"learning_rate": [0.001,0.01,0.1,1]}]
-adaCV = GridSearchCV(ada, tuned_parameters, scoring='accuracy',cv=10)
-adaCV.fit(X_train_preprocessed_df, y_train)
-print("Best parameters set found on validation set:")
-print()
-print(adaCV.best_params_)
-print()
-print("Grid scores on validation set:")
-print()
-means = adaCV.cv_results_["mean_test_score"]
-stds = adaCV.cv_results_["std_test_score"]
-for mean, std, params in zip(means, stds, adaCV.cv_results_["params"]):
-        print("%0.3f (+/-%0.03f) for %r" % (mean, std, params))
+class AdaBoostModel:
+    def __init__(self, X_train, y_train, X_test, y_test, n_estimators=100, random_state=0):
+        self.X_train = X_train
+        self.y_train = y_train
+        self.X_test = X_test
+        self.y_test = y_test
+        self.n_estimators = n_estimators
+        self.random_state = random_state
+        self.best_estimator_ = None
 
-# predict test set labels
-ypred_ada = adaCV.predict(X_test_preprocessed_df)
-accuracy_score(y_test,ypred_ada)
+    def fine_tune(self, param_grid={"learning_rate": [0.001, 0.01, 0.1, 1]}, cv=10):
+        base_estimator = DecisionTreeClassifier(max_depth=3)
+        ada = AdaBoostClassifier(estimator=base_estimator, n_estimators=self.n_estimators, random_state=self.random_state)
+        grid = GridSearchCV(ada, param_grid, scoring='accuracy', cv=cv)
 
-confusion_table(ypred_ada, y_test)
+        grid.fit(self.X_train, self.y_train)
+
+        self.best_estimator_ = grid.best_estimator_
+        print("AdaBoost Best Params:", grid.best_params_)
+        for mean, std, params in zip(grid.cv_results_["mean_test_score"],
+                                     grid.cv_results_["std_test_score"],
+                                     grid.cv_results_["params"]):
+            print("%0.3f (+/-%0.03f) for %r" % (mean, std, params))
+
+        return self.best_estimator_
+
+    def predict(self):
+        if self.best_estimator_ is None:
+            raise ValueError("Model not tuned. Call tune() first.")
+        
+        y_pred = self.best_estimator_.predict(self.X_test)
+        print("AdaBoost Accuracy:", accuracy_score(self.y_test, y_pred))
+
+        confusion_table(y_pred, self.y_test)
+
+        return y_pred
 
 
-## Gradient Boosting
+# -----------------------
+# Gradient Boosting Model
+# -----------------------
+class GradientBoostingModel:
+    def __init__(self, X_train, y_train, X_test, y_test, n_estimators=100, max_depth=3, random_state=0):
+        self.X_train = X_train
+        self.y_train = y_train
+        self.X_test = X_test
+        self.y_test = y_test
+        self.n_estimators = n_estimators
+        self.max_depth = max_depth
+        self.random_state = random_state
+        self.best_estimator_ = None
 
-grd = GradientBoostingClassifier(max_depth=3, n_estimators=100, random_state=0)
-# more details see https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.GradientBoostingClassifier.html#sklearn.ensemble.GradientBoostingClassifier
-# set tuning values
-tuned_parameters = [{"learning_rate": [0.001,0.01,0.1,1]}]
-grdCV = GridSearchCV(grd, tuned_parameters, scoring='accuracy',cv=10)
-grdCV.fit(X_train_preprocessed_df, y_train)
-print("Best parameters set found on validation set:")
-print()
-print(grdCV.best_params_)
-print()
-print("Grid scores on validation set:")
-print()
-means = grdCV.cv_results_["mean_test_score"]
-stds = grdCV.cv_results_["std_test_score"]
-for mean, std, params in zip(means, stds, grdCV.cv_results_["params"]):
-        print("%0.3f (+/-%0.03f) for %r" % (mean, std, params))
+    def fine_tune(self, param_grid={"learning_rate": [0.001, 0.01, 0.1, 1]}, cv=10):
+        gb = GradientBoostingClassifier(max_depth=self.max_depth, n_estimators=self.n_estimators,
+                                        random_state=self.random_state)
+        grid = GridSearchCV(gb, param_grid, scoring='accuracy', cv=cv)
 
-# predict test set labels
-ypred_grd = grdCV.predict(X_test_preprocessed_df)
-accuracy_score(y_test,ypred_grd)
+        grid.fit(self.X_train, self.y_train)
 
-confusion_table(ypred_grd, y_test)
+        self.best_estimator_ = grid.best_estimator_
+        print("Gradient Boosting Best Params:", grid.best_params_)
+        for mean, std, params in zip(grid.cv_results_["mean_test_score"],
+                                     grid.cv_results_["std_test_score"],
+                                     grid.cv_results_["params"]):
+            print("%0.3f (+/-%0.03f) for %r" % (mean, std, params))
 
-# get variable importance, e.g. mean decrease in gini index
-grd = GradientBoostingClassifier(learning_rate=0.01, max_depth=3, n_estimators=100, random_state=0).fit(X_train_preprocessed_df,y_train)
-grd_importances = grd.feature_importances_
+        return self.best_estimator_
 
-#plot the most important features
-grd_index = np.argsort(grd_importances)
-boosting_importances = pd.Series(grd_importances[grd_index[-10:]], index=grd.feature_names_in_[grd_index[-10:]])
+    def predict(self):
+        if self.best_estimator_ is None:
+            raise ValueError("Model not tuned. Call tune() first.")
 
-fig, ax = plt.subplots()
-boosting_importances.plot.bar()
-ax.set_ylabel("Mean decrease in impurity")
-fig.tight_layout()
+        y_pred = self.best_estimator_.predict(self.X_test)
+        print("Gradient Boosting Accuracy:", accuracy_score(self.y_test, y_pred))
+
+        confusion_table(y_pred, self.y_test)
+
+        return y_pred
+
+    def plot_feature_importance(self):
+        # Train a Gradient Boosting model with a preset learning_rate (e.g., 0.01) for feature importance visualization
+        gb = GradientBoostingClassifier(learning_rate=0.01, max_depth=self.max_depth,
+                                        n_estimators=self.n_estimators, random_state=self.random_state)
+
+        gb.fit(self.X_train, self.y_train)
+
+        importances = gb.feature_importances_
+
+        # plot the most important features
+        indices = np.argsort(importances)
+        top_importances = pd.Series(importances[indices[-10:]], index=gb.feature_names_in_[indices[-10:]])
+
+        fig, ax = subplots()
+
+        top_importances.plot.bar(ax=ax)
+        ax.set_ylabel("Mean decrease in impurity")
+
+        plt.tight_layout()
+        plt.show()
+
+
+if __name__ == "__main__":
+    # Data loading and preprocessing
+    file_path = './datasets/student-mat.csv'
+    data_processor = DataProcessor(file_path)
+    X, y = data_processor.load_data()
+    X_preprocessed_df = data_processor.preprocess(X)
+    X_train, X_test, y_train, y_test = train_test_split(X_preprocessed_df, y, test_size=0.3, random_state=42)
+
+    # Decision Tree
+    dt_model = DecisionTreeModel(X_train, y_train, X_test, y_test)
+    dt_model.fine_tune()
+    dt_model.predict()
+    dt_model.plot_tree()
+
+    # Random Forest
+    rf_model = RandomForestModel(X_train, y_train, X_test, y_test)
+    rf_model.fine_tune()
+    rf_model.predict()
+    rf_model.plot_feature_importance()
+
+    # AdaBoost
+    ada_model = AdaBoostModel(X_train, y_train, X_test, y_test)
+    ada_model.fine_tune()
+    ada_model.predict()
+
+    # Gradient Boosting
+    gb_model = GradientBoostingModel(X_train, y_train, X_test, y_test)
+    gb_model.fine_tune()
+    gb_model.predict()
+    gb_model.plot_feature_importance()
