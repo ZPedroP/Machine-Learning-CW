@@ -64,8 +64,9 @@ app_ui = ui.page_fluid(
                 "paramSelLeft1",
                 ui.h5("Learning Rate (alpha)"),
                 min=0,
-                max=1,
-                value=0.5
+                max=0.05,
+                value=0.01,
+                sep=0.005
             ),
             ui.input_select(
                 "treeSelLeft1",
@@ -78,9 +79,10 @@ app_ui = ui.page_fluid(
             ui.input_slider(
                 "paramSelLeft2",
                 ui.h5("Max Depth"),
-                min=0,
-                max=1,
-                value=0.5
+                min=1,
+                max=20,
+                value=10,
+                step=1
             ),
             ui.input_select(
                 "treeSelLeft2",
@@ -117,8 +119,9 @@ app_ui = ui.page_fluid(
                 "paramSelRight1",
                 ui.h5("Learning Rate (alpha)"),
                 min=0,
-                max=1,
-                value=0.5
+                max=0.05,
+                value=0.01,
+                sep=0.005
             ),
             ui.input_select(
                 "treeSelRight1",
@@ -131,9 +134,10 @@ app_ui = ui.page_fluid(
             ui.input_slider(
                 "paramSelRight2",
                 ui.h5("Max Depth"),
-                min=0,
-                max=1,
-                value=0.5
+                min=1,
+                max=20,
+                value=10,
+                step=1
             ),
             ui.input_select(
                 "treeSelRight2",
@@ -149,13 +153,6 @@ app_ui = ui.page_fluid(
         )
     )
 )
-
-'''
-f"Selected Model: {input.modelSelLeft()}\n"
-f"Classification: {input.classification_type()}\n"
-f"Pair 1 - Parameter: {input.paramSelLeft1()}, Tree: {input.treeSelLeft1()}\n"
-f"Pair 2 - Parameter: {input.paramSelLeft2()}, Tree: {input.treeSelLeft2()}"
-'''
 
 # Define the server logic
 def server(input, output, session):
@@ -199,21 +196,13 @@ def server(input, output, session):
             return (
                 gradient_boosting_model.model_description
             )
-        '''
-        return (
-            f"Selected Model: {input.modelSelRight()}\n"
-            f"Classification: {input.classification_type()}\n"
-            f"Pair 1 - Parameter: {input.paramSelRight1()}, Tree: {input.treeSelRight1()}\n"
-            f"Pair 2 - Parameter: {input.paramSelRight2()}, Tree: {input.treeSelRight2()}"
-        )
-        '''
 
     @output
     @render.plot
     def treePlotLeft1():
         if input.modelSelLeft() == "Decision Tree":
             return (
-                decision_tree_model.plot_tree()
+                decision_tree_model.plot_tree(ccp_alpha=input.paramSelLeft1())
             )
         elif input.modelSelLeft() == "Random Forest":
              return (
@@ -227,21 +216,13 @@ def server(input, output, session):
             return (
                 gradient_boosting_model.model_description
             )
-        '''
-        import matplotlib.pyplot as plt
-        import numpy as np
-        fig, ax = plt.subplots()
-        ax.plot(np.random.rand(10))
-        ax.set_title(f"Left Tree Plot 1: {input.treeSelLeft1()}")
-        return fig
-        '''
 
     @output
     @render.plot
     def treePlotLeft2():
         if input.modelSelLeft() == "Decision Tree":
             return (
-                decision_tree_model.plot_tree()
+                decision_tree_model.plot_tree(max_depth=input.paramSelLeft2())
             )
         elif input.modelSelLeft() == "Random Forest":
              return (
@@ -261,7 +242,7 @@ def server(input, output, session):
     def treePlotRight1():
         if input.modelSelRight() == "Decision Tree":
             return (
-                decision_tree_model.plot_tree()
+                decision_tree_model.plot_tree(ccp_alpha=input.paramSelRight1())
             )
         elif input.modelSelRight() == "Random Forest":
              return (
@@ -281,7 +262,7 @@ def server(input, output, session):
     def treePlotRight2():
         if input.modelSelRight() == "Decision Tree":
             return (
-                decision_tree_model.plot_tree()
+                decision_tree_model.plot_tree(max_depth=input.paramSelRight2())
             )
         elif input.modelSelRight() == "Random Forest":
              return (
@@ -299,22 +280,82 @@ def server(input, output, session):
     @output
     @render.text
     def trainScoreLeft():
-        return "Train Score (Left): 0.95"
+        if input.modelSelLeft() == "Decision Tree":
+            return (
+                "Train Score (Right): 0.92"
+            )
+        elif input.modelSelLeft() == "Random Forest":
+             return (
+                 "Train Score (Right): 0.92"
+             )
+        elif input.modelSelLeft() == "AdaBoost":
+             return (
+                 "Train Score (Right): 0.92"
+             )
+        else:
+            return (
+                "Train Score (Right): 0.92"
+            )
 
     @output
     @render.text
     def testScoreLeft():
-        return "Test Score (Left): 0.90"
+        if input.modelSelLeft() == "Decision Tree":
+            return (
+                "Test Score (Left): 0.90"
+            )
+        elif input.modelSelLeft() == "Random Forest":
+             return (
+                 "Test Score (Left): 0.90"
+             )
+        elif input.modelSelLeft() == "AdaBoost":
+             return (
+                 "Test Score (Left): 0.90"
+             )
+        else:
+            return (
+                "Test Score (Left): 0.90"
+            )
 
     @output
     @render.text
     def trainScoreRight():
-        return "Train Score (Right): 0.92"
+        if input.modelSelRight() == "Decision Tree":
+            return (
+                "Train Score (Right): 0.92"
+            )
+        elif input.modelSelRight() == "Random Forest":
+             return (
+                 "Train Score (Right): 0.92"
+             )
+        elif input.modelSelRight() == "AdaBoost":
+             return (
+                 "Train Score (Right): 0.92"
+             )
+        else:
+            return (
+                "Train Score (Right): 0.92"
+            )
 
     @output
     @render.text
     def testScoreRight():
-        return "Test Score (Right): 0.88"
+        if input.modelSelRight() == "Decision Tree":
+            return (
+                "Test Score (Right): 0.88"
+            )
+        elif input.modelSelRight() == "Random Forest":
+             return (
+                 "Test Score (Right): 0.88"
+             )
+        elif input.modelSelRight() == "AdaBoost":
+             return (
+                 "Test Score (Right): 0.88"
+             )
+        else:
+            return (
+                "Test Score (Right): 0.88"
+            )
 
 # Create the Shiny app object
 app = App(app_ui, server)

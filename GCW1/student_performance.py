@@ -116,9 +116,9 @@ class DecisionTreeModel:
 
         return y_pred
 
-    def plot_tree(self, ccp_alpha=0.01):
+    def plot_tree(self, ccp_alpha=0.01, max_depth=None):
         # Train a decision tree with the chosen complexity parameter and visualize it
-        dt = DecisionTreeClassifier(ccp_alpha=ccp_alpha, random_state=self.random_state)
+        dt = DecisionTreeClassifier(ccp_alpha=ccp_alpha, random_state=self.random_state, max_depth=max_depth)
 
         dt.fit(self.X_train, self.y_train)
 
