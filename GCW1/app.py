@@ -128,17 +128,8 @@ app_ui = ui.page_fluid(
                     ),
                 ),
                 # Dynamically select the tree to plot
-                ui.output_ui("dynamic_tree_selection")
+                ui.output_ui("dynamic_tree_selection_left_rf")
             ),
-
-            # ui.panel_conditional(
-            #     "input.modelSelLeft != 'Decision Tree'",
-            #     ui.input_select(
-            #         "treeSelLeft1",
-            #         ui.h5("Tree Selection"),
-            #         {"Tree A": "Tree A", "Tree B": "Tree B"}
-            #     )
-            # ),
 
             ui.output_plot("treePlotLeft1"),
 
@@ -170,31 +161,67 @@ app_ui = ui.page_fluid(
             ui.panel_conditional(
                 "input.modelSelRight === 'Decision Tree'",
                 ui.input_slider(
-                    "paramSelRight1",
+                    "paramSelRightDt1",
                     ui.h5("Cost Complexity Pruning-α"),
                     min=0,
                     max=0.05,
                     value=0.01,
                     sep=0.005
                 ),
-            ),
-
-            ui.input_slider(
-                "paramSelRight2",
-                ui.h5("Max Depth"),
-                min=1,
-                max=20,
-                value=10,
-                step=1
+                ui.input_slider(
+                    "paramSelRightDt2",
+                    ui.h5("Max Depth"),
+                    min=1,
+                    max=20,
+                    value=10,
+                    step=1
+                ),
             ),
 
             ui.panel_conditional(
-                "input.modelSelRight != 'Decision Tree'",
-                ui.input_select(
-                    "treeSelRight1",
-                    ui.h5("Tree Selection"),
-                    {"Tree A": "Tree A", "Tree B": "Tree B"}
-                )
+                "input.modelSelRight === 'Random Forest'",
+                ui.row(
+                    ui.column(
+                        6,
+                        ui.input_slider(
+                            "paramSelRightRf1",
+                            ui.h5("Cost Complexity Pruning-α"),
+                            min=0,
+                            max=0.05,
+                            value=0.01,
+                            sep=0.005
+                        ),
+                        ui.input_slider(
+                            "paramSelRightRf2",
+                            ui.h5("Max Depth"),
+                            min=1,
+                            max=20,
+                            value=10,
+                            step=1
+                        ),
+                    ),
+                    ui.column(
+                        6,
+                        ui.input_slider(
+                            "paramSelRightRf3",
+                            ui.h5("Number of Estimators"),
+                            min=1,
+                            max=100,
+                            value=50,
+                            step=1
+                        ),
+                        ui.input_slider(
+                            "paramSelRightRf4",
+                            ui.h5("Max Features"),
+                            min=1,
+                            max=60,
+                            value=30,
+                            step=1
+                        ),
+                    ),
+                ),
+                # Dynamically select the tree to plot
+                ui.output_ui("dynamic_tree_selection_right_rf")
             ),
 
             ui.output_plot("treePlotRight1"),
@@ -211,12 +238,20 @@ app_ui = ui.page_fluid(
 def server(input, output, session):
     @output
     @render.ui
-    def dynamic_tree_selection():
+    def dynamic_tree_selection_left_rf():
         if input.modelSelLeft() == "Random Forest":
             num_estimators = input.paramSelLeftRf3()  # Get the selected number of estimators
             options = {str(i): f"Tree {i+1}" for i in range(num_estimators)}
-            # options = {f"Tree {i+1}": f"Tree {i+1}" for i in range(num_estimators)}
             return ui.input_select("treeSelLeftRf", ui.h5("Tree Selection"), options)
+        return None
+
+    @output
+    @render.ui
+    def dynamic_tree_selection_right_rf():
+        if input.modelSelRight() == "Random Forest":
+            num_estimators = input.paramSelRightRf3()  # Get the selected number of estimators
+            options = {str(i): f"Tree {i+1}" for i in range(num_estimators)}
+            return ui.input_select("treeSelRightRf", ui.h5("Tree Selection"), options)
         return None
 
     @output
@@ -267,13 +302,13 @@ def server(input, output, session):
                 decision_tree_model.plot_results(ccp_alpha=input.paramSelLeftDt1(), max_depth=input.paramSelLeftDt2())
             )
         elif input.modelSelLeft() == "Random Forest":
-             rf_left_estimators = random_forest_model.plot_results(ccp_alpha=input.paramSelLeftRf1() , max_depth=input.paramSelLeftRf2(), n_estimators=input.paramSelLeftRf3(), max_features=input.paramSelLeftRf4())
-             fig, ax = plt.subplots()
-             plot_tree(rf_left_estimators[int(input.treeSelLeftRf())], feature_names=random_forest_model.X_train.columns, class_names=['0', '1'], filled=True, ax=ax)
-             ax.set_title(f"Random Forest")
-             return (
+            rf_left_estimators = random_forest_model.plot_results(ccp_alpha=input.paramSelLeftRf1() , max_depth=input.paramSelLeftRf2(), n_estimators=input.paramSelLeftRf3(), max_features=input.paramSelLeftRf4())
+            fig, ax = plt.subplots()
+            plot_tree(rf_left_estimators[int(input.treeSelLeftRf())], feature_names=random_forest_model.X_train.columns, class_names=['0', '1'], filled=True, ax=ax)
+            ax.set_title(f"Random Forest")
+            return (
                 fig
-             )
+            )
         elif input.modelSelLeft() == "AdaBoost":
              return (
                  ada_boost_model.model_description
@@ -287,18 +322,18 @@ def server(input, output, session):
     @render.plot
     def treePlotRight1():
         if input.modelSelRight() == "Decision Tree":
+            print("Decision Tree IS HERE")
             return (
-                decision_tree_model.plot_results(ccp_alpha=input.paramSelRight1())
+                decision_tree_model.plot_results(ccp_alpha=input.paramSelRightDt1(), max_depth=input.paramSelRightDt2())
             )
         elif input.modelSelRight() == "Random Forest":
-            #  rf_right = random_forest_model.plot_tree(n_estimators=input.paramSelRight1(), max_depth=input.paramSelRight2())
-            #  fig, ax = plt.subplots()
-            #  plot_tree(rf_right, feature_names=random_forest_model.X_train.columns, class_names=['0', '1'], filled=True, ax=ax)
-            #  ax.set_title(f"Random Forest (number of estimators={input.paramSelRight1()})")
-            #  return (
-            #     fig
-            #  )
-            ada_boost_model.model_description
+            rf_right_estimators = random_forest_model.plot_results(ccp_alpha=input.paramSelRightRf1() , max_depth=input.paramSelRightRf2(), n_estimators=input.paramSelRightRf3(), max_features=input.paramSelRightRf4())
+            fig, ax = plt.subplots()
+            plot_tree(rf_right_estimators[int(input.treeSelRightRf())], feature_names=random_forest_model.X_train.columns, class_names=['0', '1'], filled=True, ax=ax)
+            ax.set_title(f"Random Forest")
+            return (
+                fig
+            )
         elif input.modelSelRight() == "AdaBoost":
              return (
                  ada_boost_model.model_description
@@ -317,7 +352,7 @@ def server(input, output, session):
             )
         elif input.modelSelLeft() == "Random Forest":
              return (
-                 "Train Score (Right): 0.92"
+                "Train Score: {:.4}".format(random_forest_model.plot_results(ccp_alpha=input.paramSelLeftRf1() , max_depth=input.paramSelLeftRf2(), n_estimators=input.paramSelLeftRf3(), max_features=input.paramSelLeftRf4(), return_results=1)[0])
              )
         elif input.modelSelLeft() == "AdaBoost":
              return (
@@ -337,7 +372,7 @@ def server(input, output, session):
             )
         elif input.modelSelLeft() == "Random Forest":
              return (
-                 "Test Score (Left): 0.90"
+                "Test Score: {:.4}".format(random_forest_model.plot_results(ccp_alpha=input.paramSelLeftRf1() , max_depth=input.paramSelLeftRf2(), n_estimators=input.paramSelLeftRf3(), max_features=input.paramSelLeftRf4(), return_results=1)[1])
              )
         elif input.modelSelLeft() == "AdaBoost":
              return (
@@ -353,11 +388,11 @@ def server(input, output, session):
     def trainScoreRight():
         if input.modelSelRight() == "Decision Tree":
             return (
-                "Train Score: {:.4}".format(decision_tree_model.plot_results(ccp_alpha=input.paramSelRight1(), max_depth=input.paramSelRight2(), return_results=1)[0])
+                "Train Score: {:.4}".format(decision_tree_model.plot_results(ccp_alpha=input.paramSelRightDt1(), max_depth=input.paramSelRightDt2(), return_results=1)[0])
             )
         elif input.modelSelRight() == "Random Forest":
              return (
-                 "Train Score (Right): 0.92"
+                "Train Score: {:.4}".format(random_forest_model.plot_results(ccp_alpha=input.paramSelRightRf1() , max_depth=input.paramSelRightRf2(), n_estimators=input.paramSelRightRf3(), max_features=input.paramSelRightRf4(), return_results=1)[0])
              )
         elif input.modelSelRight() == "AdaBoost":
              return (
@@ -373,11 +408,11 @@ def server(input, output, session):
     def testScoreRight():
         if input.modelSelRight() == "Decision Tree":
             return (
-                "Train Score: {:.4}".format(decision_tree_model.plot_results(ccp_alpha=input.paramSelRight1(), max_depth=input.paramSelRight2(), return_results=1)[1])
+                "Test Score: {:.4}".format(decision_tree_model.plot_results(ccp_alpha=input.paramSelRightDt1(), max_depth=input.paramSelRightDt2(), return_results=1)[1])
             )
         elif input.modelSelRight() == "Random Forest":
              return (
-                 "Test Score (Right): 0.88"
+                "Train Score: {:.4}".format(random_forest_model.plot_results(ccp_alpha=input.paramSelRightRf1() , max_depth=input.paramSelRightRf2(), n_estimators=input.paramSelRightRf3(), max_features=input.paramSelRightRf4(), return_results=1)[1])
              )
         elif input.modelSelRight() == "AdaBoost":
              return (
