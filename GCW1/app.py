@@ -61,23 +61,16 @@ app_ui = ui.page_fluid(
             ui.h3("Model Description"),
             ui.output_text("modelDescLeft"),
 
-            # First pair: parameter slider and tree selection with corresponding plot
+            # Parameter slider and tree selection with corresponding plot
             ui.input_slider(
                 "paramSelLeft1",
-                ui.h5("Learning Rate (alpha)"),
+                ui.h5("Learning Rate (α)"),
                 min=0,
                 max=0.05,
                 value=0.01,
                 sep=0.005
             ),
-            ui.input_select(
-                "treeSelLeft1",
-                ui.h5("Tree Selection"),
-                {"Tree A": "Tree A", "Tree B": "Tree B"}
-            ),
-            ui.output_plot("treePlotLeft1"),
 
-            # Second pair: parameter slider and tree selection with corresponding plot
             ui.input_slider(
                 "paramSelLeft2",
                 ui.h5("Max Depth"),
@@ -86,15 +79,20 @@ app_ui = ui.page_fluid(
                 value=10,
                 step=1
             ),
-            ui.input_select(
-                "treeSelLeft2",
-                ui.h5("Tree Selection"),
-                {"Tree A": "Tree A", "Tree B": "Tree B"}
+
+            ui.panel_conditional(
+                "input.modelSelLeft != 'Decision Tree'",
+                ui.input_select(
+                    "treeSelLeft1",
+                    ui.h5("Tree Selection"),
+                    {"Tree A": "Tree A", "Tree B": "Tree B"}
+                )
             ),
-            ui.output_plot("treePlotLeft2"),
+
+            ui.output_plot("treePlotLeft1"),
 
             # Results section
-            ui.h4("Results (Left)"),
+            ui.h4("Results"),
             ui.output_text("trainScoreLeft"),
             ui.output_text("testScoreLeft")
         ),
@@ -116,23 +114,16 @@ app_ui = ui.page_fluid(
             ui.h3("Model Description"),
             ui.output_text("modelDescRight"),
 
-            # First pair: parameter slider and tree selection with corresponding plot
+            # Parameter slider and tree selection with corresponding plot
             ui.input_slider(
                 "paramSelRight1",
-                ui.h5("Learning Rate (alpha)"),
+                ui.h5("Learning Rate (α)"),
                 min=0,
                 max=0.05,
                 value=0.01,
                 sep=0.005
             ),
-            ui.input_select(
-                "treeSelRight1",
-                ui.h5("Tree Selection"),
-                {"Tree A": "Tree A", "Tree B": "Tree B"}
-            ),
-            ui.output_plot("treePlotRight1"),
 
-            # Second pair: parameter slider and tree selection with corresponding plot
             ui.input_slider(
                 "paramSelRight2",
                 ui.h5("Max Depth"),
@@ -141,12 +132,17 @@ app_ui = ui.page_fluid(
                 value=10,
                 step=1
             ),
-            ui.input_select(
-                "treeSelRight2",
-                ui.h5("Tree Selection"),
-                {"Tree A": "Tree A", "Tree B": "Tree B"}
+
+            ui.panel_conditional(
+                "input.modelSelRight != 'Decision Tree'",
+                ui.input_select(
+                    "treeSelRight1",
+                    ui.h5("Tree Selection"),
+                    {"Tree A": "Tree A", "Tree B": "Tree B"}
+                )
             ),
-            ui.output_plot("treePlotRight2"),
+
+            ui.output_plot("treePlotRight1"),
 
             # Results section
             ui.h4("Results"),
@@ -221,50 +217,10 @@ def server(input, output, session):
 
     @output
     @render.plot
-    def treePlotLeft2():
-        if input.modelSelLeft() == "Decision Tree":
-            return (
-                decision_tree_model.plot_tree(max_depth=input.paramSelLeft2())
-            )
-        elif input.modelSelLeft() == "Random Forest":
-             return (
-                 random_forest_model.model_description
-             )
-        elif input.modelSelLeft() == "AdaBoost":
-             return (
-                 ada_boost_model.model_description
-             )
-        else:
-            return (
-                gradient_boosting_model.model_description
-            )
-
-    @output
-    @render.plot
     def treePlotRight1():
         if input.modelSelRight() == "Decision Tree":
             return (
                 decision_tree_model.plot_tree(ccp_alpha=input.paramSelRight1())
-            )
-        elif input.modelSelRight() == "Random Forest":
-             return (
-                 random_forest_model.model_description
-             )
-        elif input.modelSelRight() == "AdaBoost":
-             return (
-                 ada_boost_model.model_description
-             )
-        else:
-            return (
-                gradient_boosting_model.model_description
-            )
-
-    @output
-    @render.plot
-    def treePlotRight2():
-        if input.modelSelRight() == "Decision Tree":
-            return (
-                decision_tree_model.plot_tree(max_depth=input.paramSelRight2())
             )
         elif input.modelSelRight() == "Random Forest":
              return (
@@ -324,7 +280,7 @@ def server(input, output, session):
     def trainScoreRight():
         if input.modelSelRight() == "Decision Tree":
             return (
-                "Train Score (Right): 0.92"
+                "Train Score: {:.4}".format(decision_tree_model.plot_tree(ccp_alpha=input.paramSelRight1(), max_depth=input.paramSelRight2(), return_results=1)[0])
             )
         elif input.modelSelRight() == "Random Forest":
              return (
@@ -344,7 +300,7 @@ def server(input, output, session):
     def testScoreRight():
         if input.modelSelRight() == "Decision Tree":
             return (
-                "Test Score (Right): 0.88"
+                "Train Score: {:.4}".format(decision_tree_model.plot_tree(ccp_alpha=input.paramSelRight1(), max_depth=input.paramSelRight2(), return_results=1)[1])
             )
         elif input.modelSelRight() == "Random Forest":
              return (
