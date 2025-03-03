@@ -116,17 +116,30 @@ class DecisionTreeModel:
 
         return y_pred
 
-    def plot_tree(self, ccp_alpha=0.01, max_depth=None):
+    def plot_tree(self, ccp_alpha=0.01, max_depth=None, return_results = 0):
         # Train a decision tree with the chosen complexity parameter and visualize it
         dt = DecisionTreeClassifier(ccp_alpha=ccp_alpha, random_state=self.random_state, max_depth=max_depth)
 
         dt.fit(self.X_train, self.y_train)
 
+        # Predict on the training set
+        y_train_pred = dt.predict(self.X_train)
+        train_accuracy = accuracy_score(self.y_train, y_train_pred)
+        print("Decision Tree Training Accuracy:", train_accuracy)
+
+        # Predict on the test set
+        y_test_pred = dt.predict(self.X_test)
+        test_accuracy = accuracy_score(self.y_test, y_test_pred)
+        print("Decision Tree Test Accuracy:", test_accuracy)
+
         fig, ax = plt.subplots()
         plot_tree(dt, feature_names=self.X_train.columns, class_names=['0', '1'], filled=True, ax=ax)
         ax.set_title(f"Decision Tree (learning rate={ccp_alpha})")
 
-        return fig
+        if return_results:
+            return train_accuracy, test_accuracy
+        else:
+            return fig
 
 
 # -------------------

@@ -1,3 +1,5 @@
+# TODO: Currently the plot_tree() function is being used to plot and get the results. Right now it is resulting in this function being called twice. As long as the random state is kept the same, the accuracy results should represent the results from the tree correctly. The code should be update so it only calls the plot_tree() function once.
+
 import os
 import sys
 
@@ -282,7 +284,7 @@ def server(input, output, session):
     def trainScoreLeft():
         if input.modelSelLeft() == "Decision Tree":
             return (
-                "Train Score (Right): 0.92"
+                "Train Score: {:.4}".format(decision_tree_model.plot_tree(ccp_alpha=input.paramSelLeft1(), max_depth=input.paramSelLeft2(), return_results=1)[0])
             )
         elif input.modelSelLeft() == "Random Forest":
              return (
@@ -302,7 +304,7 @@ def server(input, output, session):
     def testScoreLeft():
         if input.modelSelLeft() == "Decision Tree":
             return (
-                "Test Score (Left): 0.90"
+                "Test Score: {:.4}".format(decision_tree_model.plot_tree(ccp_alpha=input.paramSelLeft1(), max_depth=input.paramSelLeft2(), return_results=1)[1])
             )
         elif input.modelSelLeft() == "Random Forest":
              return (
