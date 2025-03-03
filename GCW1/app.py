@@ -73,7 +73,7 @@ app_ui = ui.page_fluid(
                     min=0,
                     max=0.05,
                     value=0.01,
-                    sep=0.005
+                    step=0.005
                 ),
                 ui.input_slider(
                     "paramSelLeftDt2",
@@ -96,7 +96,7 @@ app_ui = ui.page_fluid(
                             min=0,
                             max=0.05,
                             value=0.01,
-                            sep=0.005
+                            step=0.005
                         ),
                         ui.input_slider(
                             "paramSelLeftRf2",
@@ -129,6 +129,90 @@ app_ui = ui.page_fluid(
                 ),
                 # Dynamically select the tree to plot
                 ui.output_ui("dynamic_tree_selection_left_rf")
+            ),
+
+            ui.panel_conditional(
+                "input.modelSelLeft === 'AdaBoost'",
+                ui.row(
+                    ui.column(
+                        6,
+                        ui.input_slider(
+                            "paramSelLeftAda1",
+                            ui.h5("Learning Rate"),
+                            min=0,
+                            max=1,
+                            value=0.5,
+                            step=0.01
+                        ),
+                        ui.input_slider(
+                            "paramSelLeftAda2",
+                            ui.h5("Base Estimator Max Depth"),
+                            min=1,
+                            max=20,
+                            value=10,
+                            step=1
+                        ),
+                    ),
+                    ui.column(
+                        6,
+                        ui.input_slider(
+                            "paramSelLeftAda3",
+                            ui.h5("Number of Estimators"),
+                            min=1,
+                            max=100,
+                            value=50,
+                            step=1
+                        ),
+                    ),
+                ),
+                # Dynamically select the tree to plot
+                ui.output_ui("dynamic_tree_selection_left_ada")
+            ),
+
+            ui.panel_conditional(
+                "input.modelSelLeft === 'Gradient Boosting'",
+                ui.row(
+                    ui.column(
+                        6,
+                        ui.input_slider(
+                            "paramSelLeftGb1",
+                            ui.h5("Learning Rate"),
+                            min=0,
+                            max=1,
+                            value=0.5,
+                            step=0.01
+                        ),
+                        ui.input_slider(
+                            "paramSelLeftGb2",
+                            ui.h5("Max Depth"),
+                            min=1,
+                            max=20,
+                            value=10,
+                            step=1
+                        ),
+                    ),
+                    ui.column(
+                        6,
+                        ui.input_slider(
+                            "paramSelLeftGb3",
+                            ui.h5("Number of Estimators"),
+                            min=1,
+                            max=100,
+                            value=50,
+                            step=1
+                        ),
+                        ui.input_slider(
+                            "paramSelLeftGb4",
+                            ui.h5("Max Features"),
+                            min=1,
+                            max=60,
+                            value=30,
+                            step=1
+                        ),
+                    ),
+                ),
+                # Dynamically select the tree to plot
+                ui.output_ui("dynamic_tree_selection_left_gb")
             ),
 
             ui.output_plot("treePlotLeft1"),
@@ -166,7 +250,7 @@ app_ui = ui.page_fluid(
                     min=0,
                     max=0.05,
                     value=0.01,
-                    sep=0.005
+                    step=0.005
                 ),
                 ui.input_slider(
                     "paramSelRightDt2",
@@ -189,7 +273,7 @@ app_ui = ui.page_fluid(
                             min=0,
                             max=0.05,
                             value=0.01,
-                            sep=0.005
+                            step=0.005
                         ),
                         ui.input_slider(
                             "paramSelRightRf2",
@@ -224,6 +308,90 @@ app_ui = ui.page_fluid(
                 ui.output_ui("dynamic_tree_selection_right_rf")
             ),
 
+            ui.panel_conditional(
+                "input.modelSelRight === 'AdaBoost'",
+                ui.row(
+                    ui.column(
+                        6,
+                        ui.input_slider(
+                            "paramSelRightAda1",
+                            ui.h5("Learning Rate"),
+                            min=0,
+                            max=1,
+                            value=0.5,
+                            step=0.01
+                        ),
+                        ui.input_slider(
+                            "paramSelRightAda2",
+                            ui.h5("Base Estimator Max Depth"),
+                            min=1,
+                            max=20,
+                            value=10,
+                            step=1
+                        ),
+                    ),
+                    ui.column(
+                        6,
+                        ui.input_slider(
+                            "paramSelRightAda3",
+                            ui.h5("Number of Estimators"),
+                            min=1,
+                            max=100,
+                            value=50,
+                            step=1
+                        ),
+                    ),
+                ),
+                # Dynamically select the tree to plot
+                ui.output_ui("dynamic_tree_selection_right_ada")
+            ),
+
+            ui.panel_conditional(
+                "input.modelSelRight === 'Gradient Boosting'",
+                ui.row(
+                    ui.column(
+                        6,
+                        ui.input_slider(
+                            "paramSelRightGb1",
+                            ui.h5("Learning Rate"),
+                            min=0,
+                            max=1,
+                            value=0.5,
+                            step=0.01
+                        ),
+                        ui.input_slider(
+                            "paramSelRightGb2",
+                            ui.h5("Max Depth"),
+                            min=1,
+                            max=20,
+                            value=10,
+                            step=1
+                        ),
+                    ),
+                    ui.column(
+                        6,
+                        ui.input_slider(
+                            "paramSelRightGb3",
+                            ui.h5("Number of Estimators"),
+                            min=1,
+                            max=100,
+                            value=50,
+                            step=1
+                        ),
+                        ui.input_slider(
+                            "paramSelRightGb4",
+                            ui.h5("Max Features"),
+                            min=1,
+                            max=60,
+                            value=30,
+                            step=1
+                        ),
+                    ),
+                ),
+                # Dynamically select the tree to plot
+                ui.output_ui("dynamic_tree_selection_right_gb")
+            ),
+
             ui.output_plot("treePlotRight1"),
 
             # Results section
@@ -252,6 +420,42 @@ def server(input, output, session):
             num_estimators = input.paramSelRightRf3()  # Get the selected number of estimators
             options = {str(i): f"Tree {i+1}" for i in range(num_estimators)}
             return ui.input_select("treeSelRightRf", ui.h5("Tree Selection"), options)
+        return None
+    
+    @output
+    @render.ui
+    def dynamic_tree_selection_left_ada():
+        if input.modelSelLeft() == "AdaBoost":
+            num_estimators = input.paramSelLeftAda3()  # Get the selected number of estimators
+            options = {str(i): f"Tree {i+1}" for i in range(num_estimators)}
+            return ui.input_select("treeSelLeftAda", ui.h5("Tree Selection"), options)
+        return None
+
+    @output
+    @render.ui
+    def dynamic_tree_selection_right_ada():
+        if input.modelSelRight() == "AdaBoost":
+            num_estimators = input.paramSelRightAda3()  # Get the selected number of estimators
+            options = {str(i): f"Tree {i+1}" for i in range(num_estimators)}
+            return ui.input_select("treeSelRightAda", ui.h5("Tree Selection"), options)
+        return None
+    
+    @output
+    @render.ui
+    def dynamic_tree_selection_left_gb():
+        if input.modelSelLeft() == "Gradient Boosting":
+            num_estimators = input.paramSelLeftGb3()  # Get the selected number of estimators
+            options = {str(i): f"Tree {i+1}" for i in range(num_estimators)}
+            return ui.input_select("treeSelLeftGb", ui.h5("Tree Selection"), options)
+        return None
+
+    @output
+    @render.ui
+    def dynamic_tree_selection_right_gb():
+        if input.modelSelRight() == "Gradient Boosting":
+            num_estimators = input.paramSelRightGb3()  # Get the selected number of estimators
+            options = {str(i): f"Tree {i+1}" for i in range(num_estimators)}
+            return ui.input_select("treeSelRightGb", ui.h5("Tree Selection"), options)
         return None
 
     @output
@@ -302,7 +506,7 @@ def server(input, output, session):
                 decision_tree_model.plot_results(ccp_alpha=input.paramSelLeftDt1(), max_depth=input.paramSelLeftDt2())
             )
         elif input.modelSelLeft() == "Random Forest":
-            rf_left_estimators = random_forest_model.plot_results(ccp_alpha=input.paramSelLeftRf1() , max_depth=input.paramSelLeftRf2(), n_estimators=input.paramSelLeftRf3(), max_features=input.paramSelLeftRf4())
+            rf_left_estimators = random_forest_model.plot_results(ccp_alpha=input.paramSelLeftRf1(), max_depth=input.paramSelLeftRf2(), n_estimators=input.paramSelLeftRf3(), max_features=input.paramSelLeftRf4())
             fig, ax = plt.subplots()
             plot_tree(rf_left_estimators[int(input.treeSelLeftRf())], feature_names=random_forest_model.X_train.columns, class_names=['0', '1'], filled=True, ax=ax)
             ax.set_title(f"Random Forest")
@@ -310,12 +514,20 @@ def server(input, output, session):
                 fig
             )
         elif input.modelSelLeft() == "AdaBoost":
-             return (
-                 ada_boost_model.model_description
-             )
-        else:
+            ada_left_estimators = ada_boost_model.plot_results(learning_rate=input.paramSelLeftAda1(), base_estimator_max_depth=input.paramSelLeftAda2(), n_estimators=input.paramSelLeftAda3())
+            fig, ax = plt.subplots()
+            plot_tree(ada_left_estimators[int(input.treeSelLeftAda())], feature_names=ada_boost_model.X_train.columns, class_names=['0', '1'], filled=True, ax=ax)
+            ax.set_title(f"AdaBoost")
             return (
-                gradient_boosting_model.model_description
+                fig
+            )
+        else:
+            gb_left_estimators = gradient_boosting_model.plot_results(learning_rate=input.paramSelLeftGb1(), max_depth=input.paramSelLeftGb2(), n_estimators=input.paramSelLeftGb3(), max_features=input.paramSelLeftGb4())
+            fig, ax = plt.subplots()
+            plot_tree(gb_left_estimators[int(input.treeSelLeftGb())][0], feature_names=gradient_boosting_model.X_train.columns, class_names=['0', '1'], filled=True, ax=ax)
+            ax.set_title(f"Gradient Boosting")
+            return (
+                fig
             )
 
     @output
@@ -326,7 +538,7 @@ def server(input, output, session):
                 decision_tree_model.plot_results(ccp_alpha=input.paramSelRightDt1(), max_depth=input.paramSelRightDt2())
             )
         elif input.modelSelRight() == "Random Forest":
-            rf_right_estimators = random_forest_model.plot_results(ccp_alpha=input.paramSelRightRf1() , max_depth=input.paramSelRightRf2(), n_estimators=input.paramSelRightRf3(), max_features=input.paramSelRightRf4())
+            rf_right_estimators = random_forest_model.plot_results(ccp_alpha=input.paramSelRightRf1(), max_depth=input.paramSelRightRf2(), n_estimators=input.paramSelRightRf3(), max_features=input.paramSelRightRf4())
             fig, ax = plt.subplots()
             plot_tree(rf_right_estimators[int(input.treeSelRightRf())], feature_names=random_forest_model.X_train.columns, class_names=['0', '1'], filled=True, ax=ax)
             ax.set_title(f"Random Forest")
@@ -334,12 +546,20 @@ def server(input, output, session):
                 fig
             )
         elif input.modelSelRight() == "AdaBoost":
-             return (
-                 ada_boost_model.model_description
-             )
-        else:
+            ada_right_estimators = ada_boost_model.plot_results(learning_rate=input.paramSelRightAda1(), base_estimator_max_depth=input.paramSelRightAda2(), n_estimators=input.paramSelRightAda3())
+            fig, ax = plt.subplots()
+            plot_tree(ada_right_estimators[int(input.treeSelRightAda())], feature_names=ada_boost_model.X_train.columns, class_names=['0', '1'], filled=True, ax=ax)
+            ax.set_title(f"AdaBoost")
             return (
-                gradient_boosting_model.model_description
+                fig
+            )
+        else:
+            gb_right_estimators = gradient_boosting_model.plot_results(learning_rate=input.paramSelRightGb1(), max_depth=input.paramSelRightGb2(), n_estimators=input.paramSelRightGb3(), max_features=input.paramSelRightGb4())
+            fig, ax = plt.subplots()
+            plot_tree(gb_right_estimators[int(input.treeSelRightGb())][0], feature_names=gradient_boosting_model.X_train.columns, class_names=['0', '1'], filled=True, ax=ax)
+            ax.set_title(f"Gradient Boosting")
+            return (
+                fig
             )
 
     @output
@@ -355,11 +575,11 @@ def server(input, output, session):
              )
         elif input.modelSelLeft() == "AdaBoost":
              return (
-                 "Train Score (Right): 0.92"
+                "Train Score: {:.4}".format(ada_boost_model.plot_results(learning_rate=input.paramSelLeftAda1() , base_estimator_max_depth=input.paramSelLeftAda2(), n_estimators=input.paramSelLeftAda3(), return_results=1)[0])
              )
         else:
             return (
-                "Train Score (Right): 0.92"
+                "Train Score: {:.4}".format(gradient_boosting_model.plot_results(learning_rate=input.paramSelLeftGb1(), max_depth=input.paramSelLeftGb2(), n_estimators=input.paramSelLeftGb3(), max_features=input.paramSelLeftGb4(), return_results=1)[0])
             )
 
     @output
@@ -375,11 +595,11 @@ def server(input, output, session):
              )
         elif input.modelSelLeft() == "AdaBoost":
              return (
-                 "Test Score (Left): 0.90"
+                "Test Score: {:.4}".format(ada_boost_model.plot_results(learning_rate=input.paramSelLeftAda1() , base_estimator_max_depth=input.paramSelLeftAda2(), n_estimators=input.paramSelLeftAda3(), return_results=1)[1])
              )
         else:
             return (
-                "Test Score (Left): 0.90"
+                "Test Score: {:.4}".format(gradient_boosting_model.plot_results(learning_rate=input.paramSelLeftGb1(), max_depth=input.paramSelLeftGb2(), n_estimators=input.paramSelLeftGb3(), max_features=input.paramSelLeftGb4(), return_results=1)[1])
             )
 
     @output
@@ -395,11 +615,11 @@ def server(input, output, session):
              )
         elif input.modelSelRight() == "AdaBoost":
              return (
-                 "Train Score (Right): 0.92"
+                "Train Score: {:.4}".format(ada_boost_model.plot_results(learning_rate=input.paramSelRightAda1() , base_estimator_max_depth=input.paramSelRightAda2(), n_estimators=input.paramSelRightAda3(), return_results=1)[0])
              )
         else:
             return (
-                "Train Score (Right): 0.92"
+                "Train Score: {:.4}".format(gradient_boosting_model.plot_results(learning_rate=input.paramSelRightGb1(), max_depth=input.paramSelRightGb2(), n_estimators=input.paramSelRightGb3(), max_features=input.paramSelRightGb4(), return_results=1)[0])
             )
 
     @output
@@ -415,11 +635,11 @@ def server(input, output, session):
              )
         elif input.modelSelRight() == "AdaBoost":
              return (
-                 "Test Score (Right): 0.88"
+                "Test Score: {:.4}".format(ada_boost_model.plot_results(learning_rate=input.paramSelRightAda1() , base_estimator_max_depth=input.paramSelRightAda2(), n_estimators=input.paramSelRightAda3(), return_results=1)[1])
              )
         else:
             return (
-                "Test Score (Right): 0.88"
+                "Test Score: {:.4}".format(gradient_boosting_model.plot_results(learning_rate=input.paramSelRightGb1(), max_depth=input.paramSelRightGb2(), n_estimators=input.paramSelRightGb3(), max_features=input.paramSelRightGb4(), return_results=1)[1])
             )
 
 # Create the Shiny app object

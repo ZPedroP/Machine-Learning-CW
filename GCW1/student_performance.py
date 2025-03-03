@@ -242,7 +242,7 @@ class AdaBoostModel:
         self.n_estimators = n_estimators
         self.random_state = random_state
         self.best_estimator_ = None
-        self.model_description = "AdaBoost Model placeholder description"
+        self.model_description = "AdaBoost constructs a strong learner by combining multiple weak learners. It adjusts the sample weights based on each weak learner’s performance, giving more focus to misclassified samples in subsequent iterations. Additionally, it assigns weights to weak learners according to their performance and ultimately combines them into a more powerful classifier."
 
     def fine_tune(self, param_grid={"learning_rate": [0.001, 0.01, 0.1, 1]}, cv=10):
         base_estimator = DecisionTreeClassifier(max_depth=3)
@@ -302,12 +302,12 @@ class AdaBoostModel:
         # Predict on the training set
         y_train_pred = ada.predict(self.X_train)
         train_accuracy = accuracy_score(self.y_train, y_train_pred)
-        print("Random Forest Training Accuracy:", train_accuracy)
+        print("AdaBoost Training Accuracy:", train_accuracy)
 
         # Predict on the test set
         y_test_pred = ada.predict(self.X_test)
         test_accuracy = accuracy_score(self.y_test, y_test_pred)
-        print("Random Forest Test Accuracy:", test_accuracy)
+        print("AdaBoost Test Accuracy:", test_accuracy)
 
         if return_results:
             return train_accuracy, test_accuracy
@@ -328,7 +328,7 @@ class GradientBoostingModel:
         self.max_depth = max_depth
         self.random_state = random_state
         self.best_estimator_ = None
-        self.model_description = "Gradient Boosting Model placeholder description"
+        self.model_description = "Gradient Boosting focuses on iteratively correcting the errors of the previous model. It calculates the residuals of the current model, trains a new model to predict these residuals, and then adds the new model’s predictions to the current model, gradually improving overall predictive performance."
 
     def fine_tune(self, param_grid={"learning_rate": [0.001, 0.01, 0.1, 1]}, cv=10):
         gb = GradientBoostingClassifier(max_depth=self.max_depth, n_estimators=self.n_estimators,
@@ -387,12 +387,12 @@ class GradientBoostingModel:
         # Predict on the training set
         y_train_pred = gb.predict(self.X_train)
         train_accuracy = accuracy_score(self.y_train, y_train_pred)
-        print("Random Forest Training Accuracy:", train_accuracy)
+        print("Gradient Boost Training Accuracy:", train_accuracy)
 
         # Predict on the test set
         y_test_pred = gb.predict(self.X_test)
         test_accuracy = accuracy_score(self.y_test, y_test_pred)
-        print("Random Forest Test Accuracy:", test_accuracy)
+        print("Gradient Boost Test Accuracy:", test_accuracy)
 
         if return_results:
             return train_accuracy, test_accuracy
