@@ -208,7 +208,7 @@ class RandomForestModel:
         plt.show()
 
     def plot_results(self, ccp_alpha = 0.01, max_features = "sqrt", n_estimators=10, max_depth=None, return_results = 0):
-        # Train a decision tree with the chosen complexity parameter and visualize it
+        # Train a Random Forest classifier
         rf = RandomForestClassifier(n_estimators=n_estimators, max_features=max_features, ccp_alpha=ccp_alpha, random_state=self.random_state, max_depth=max_depth)
 
         rf.fit(self.X_train, self.y_train)
@@ -292,6 +292,28 @@ class AdaBoostModel:
         plt.tight_layout()
         plt.show()
 
+    def plot_results(self, learning_rate = 0.01, n_estimators=10, base_estimator_max_depth=None, return_results = 0):
+        # Train an AdaBoost classifier
+        base_estimator = DecisionTreeClassifier(max_depth=base_estimator_max_depth)
+        ada = AdaBoostClassifier(estimator=base_estimator, n_estimators=n_estimators, learning_rate=learning_rate, random_state=self.random_state)
+
+        ada.fit(self.X_train, self.y_train)
+
+        # Predict on the training set
+        y_train_pred = ada.predict(self.X_train)
+        train_accuracy = accuracy_score(self.y_train, y_train_pred)
+        print("Random Forest Training Accuracy:", train_accuracy)
+
+        # Predict on the test set
+        y_test_pred = ada.predict(self.X_test)
+        test_accuracy = accuracy_score(self.y_test, y_test_pred)
+        print("Random Forest Test Accuracy:", test_accuracy)
+
+        if return_results:
+            return train_accuracy, test_accuracy
+        else:    
+            return ada.estimators_
+
 
 # -----------------------
 # Gradient Boosting Model
@@ -355,6 +377,27 @@ class GradientBoostingModel:
 
         plt.tight_layout()
         plt.show()
+    
+    def plot_results(self, learning_rate = 0.01, max_features = "sqrt", n_estimators=10, max_depth=None, return_results = 0):
+        # Train a Gradient Boosting classifier
+        gb = GradientBoostingClassifier(learning_rate=learning_rate, max_features=max_features, max_depth=max_depth, n_estimators=n_estimators, random_state=self.random_state)
+
+        gb.fit(self.X_train, self.y_train)
+
+        # Predict on the training set
+        y_train_pred = gb.predict(self.X_train)
+        train_accuracy = accuracy_score(self.y_train, y_train_pred)
+        print("Random Forest Training Accuracy:", train_accuracy)
+
+        # Predict on the test set
+        y_test_pred = gb.predict(self.X_test)
+        test_accuracy = accuracy_score(self.y_test, y_test_pred)
+        print("Random Forest Test Accuracy:", test_accuracy)
+
+        if return_results:
+            return train_accuracy, test_accuracy
+        else:    
+            return gb.estimators_
 
 
 if __name__ == "__main__":
@@ -382,9 +425,12 @@ if __name__ == "__main__":
     ada_model = AdaBoostModel(X_train, y_train, X_test, y_test)
     ada_model.fine_tune()
     ada_model.predict()
+    ada_model.plot_feature_importance()
+    ada_model.plot_results()
 
     # Gradient Boosting
     gb_model = GradientBoostingModel(X_train, y_train, X_test, y_test)
     gb_model.fine_tune()
     gb_model.predict()
     gb_model.plot_feature_importance()
+    gb_model.plot_results()

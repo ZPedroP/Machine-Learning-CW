@@ -322,7 +322,6 @@ def server(input, output, session):
     @render.plot
     def treePlotRight1():
         if input.modelSelRight() == "Decision Tree":
-            print("Decision Tree IS HERE")
             return (
                 decision_tree_model.plot_results(ccp_alpha=input.paramSelRightDt1(), max_depth=input.paramSelRightDt2())
             )
