@@ -32,41 +32,62 @@ app_ui = ui.page_fluid(
             ui.input_select(
                 "classification_type",
                 "Classification Type",
-                {
-                    "Binary": "Binary",
-                    "Multiclass": "Multiclass"
-                },
+                {"Binary": "Binary", "Multiclass": "Multiclass"},
                 selected="Binary"
             )
         )
     ),
 
-    # Two-column layout for Left and Right "models"
+    # Two-column layout for Left and Right models
     ui.row(
         # Left Column
         ui.column(
             6,
+            # Model selection dropdown
+            ui.input_select(
+                "modelSelLeft",
+                "Model Selection (Left)",
+                {
+                    "Decision Tree": "Decision Tree",
+                    "Random Forest": "Random Forest",
+                    "AdaBoost": "AdaBoost",
+                    "Gradient Boosting": "Gradient Boosting"
+                }
+            ),
             ui.h3("Model Description (Left)"),
             ui.output_text("modelDescLeft"),
 
-            ui.input_select(
+            # First pair: parameter slider and tree selection with corresponding plot
+            ui.input_slider(
                 "paramSelLeft1",
                 "Parameter Selection (Left #1)",
-                {"param1": "param1", "param2": "param2", "param3": "param3"}
+                min=0,
+                max=100,
+                value=50
             ),
             ui.input_select(
-                "treeSelLeft",
-                "Tree Selection (Left)",
+                "treeSelLeft1",
+                "Tree Selection (Left #1)",
                 {"Tree A": "Tree A", "Tree B": "Tree B"}
             ),
-            ui.input_select(
+            ui.output_plot("treePlotLeft1"),
+
+            # Second pair: parameter slider and tree selection with corresponding plot
+            ui.input_slider(
                 "paramSelLeft2",
                 "Parameter Selection (Left #2)",
-                {"paramX": "paramX", "paramY": "paramY"}
+                min=0,
+                max=100,
+                value=50
             ),
+            ui.input_select(
+                "treeSelLeft2",
+                "Tree Selection (Left #2)",
+                {"Tree A": "Tree A", "Tree B": "Tree B"}
+            ),
+            ui.output_plot("treePlotLeft2"),
 
-            ui.output_plot("treePlotLeft"),
-
+            # Results section
             ui.h4("Results (Left)"),
             ui.output_text("trainScoreLeft"),
             ui.output_text("testScoreLeft")
@@ -75,27 +96,51 @@ app_ui = ui.page_fluid(
         # Right Column
         ui.column(
             6,
+            # Model selection dropdown
+            ui.input_select(
+                "modelSelRight",
+                "Model Selection (Right)",
+                {
+                    "Decision Tree": "Decision Tree",
+                    "Random Forest": "Random Forest",
+                    "AdaBoost": "AdaBoost",
+                    "Gradient Boosting": "Gradient Boosting"
+                }
+            ),
             ui.h3("Model Description (Right)"),
             ui.output_text("modelDescRight"),
 
-            ui.input_select(
+            # First pair: parameter slider and tree selection with corresponding plot
+            ui.input_slider(
                 "paramSelRight1",
                 "Parameter Selection (Right #1)",
-                {"param1": "param1", "param2": "param2", "param3": "param3"}
+                min=0,
+                max=100,
+                value=50
             ),
             ui.input_select(
-                "treeSelRight",
-                "Tree Selection (Right)",
+                "treeSelRight1",
+                "Tree Selection (Right #1)",
                 {"Tree A": "Tree A", "Tree B": "Tree B"}
             ),
-            ui.input_select(
+            ui.output_plot("treePlotRight1"),
+
+            # Second pair: parameter slider and tree selection with corresponding plot
+            ui.input_slider(
                 "paramSelRight2",
                 "Parameter Selection (Right #2)",
-                {"paramX": "paramX", "paramY": "paramY"}
+                min=0,
+                max=100,
+                value=50
             ),
+            ui.input_select(
+                "treeSelRight2",
+                "Tree Selection (Right #2)",
+                {"Tree A": "Tree A", "Tree B": "Tree B"}
+            ),
+            ui.output_plot("treePlotRight2"),
 
-            ui.output_plot("treePlotRight"),
-
+            # Results section
             ui.h4("Results (Right)"),
             ui.output_text("trainScoreRight"),
             ui.output_text("testScoreRight")
@@ -105,44 +150,69 @@ app_ui = ui.page_fluid(
 
 # Define the server logic
 def server(input, output, session):
+
     @output
     @render.text
     def modelDescLeft():
         return (
-            f"Selected classification type: {input.classification_type()}\n"
-            f"Parameters chosen: {input.paramSelLeft1()} and {input.paramSelLeft2()}\n"
-            f"Tree type: {input.treeSelLeft()}"
+            f"Selected Model: {input.modelSelLeft()}\n"
+            f"Classification: {input.classification_type()}\n"
+            f"Pair 1 - Parameter: {input.paramSelLeft1()}, Tree: {input.treeSelLeft1()}\n"
+            f"Pair 2 - Parameter: {input.paramSelLeft2()}, Tree: {input.treeSelLeft2()}"
         )
 
     @output
     @render.text
     def modelDescRight():
         return (
-            f"Selected classification type: {input.classification_type()}\n"
-            f"Parameters chosen: {input.paramSelRight1()} and {input.paramSelRight2()}\n"
-            f"Tree type: {input.treeSelRight()}"
+            f"Selected Model: {input.modelSelRight()}\n"
+            f"Classification: {input.classification_type()}\n"
+            f"Pair 1 - Parameter: {input.paramSelRight1()}, Tree: {input.treeSelRight1()}\n"
+            f"Pair 2 - Parameter: {input.paramSelRight2()}, Tree: {input.treeSelRight2()}"
         )
 
-    # Placeholder for a "tree" plot on the left
+    # Placeholder tree plot for Left pair 1
     @output
     @render.plot
-    def treePlotLeft():
+    def treePlotLeft1():
         import matplotlib.pyplot as plt
         import numpy as np
         fig, ax = plt.subplots()
         ax.plot(np.random.rand(10))
-        ax.set_title("Left Model Tree")
+        ax.set_title(f"Left Tree Plot 1: {input.treeSelLeft1()}")
         return fig
 
-    # Placeholder for a "tree" plot on the right
+    # Placeholder tree plot for Left pair 2
     @output
     @render.plot
-    def treePlotRight():
+    def treePlotLeft2():
         import matplotlib.pyplot as plt
         import numpy as np
         fig, ax = plt.subplots()
         ax.plot(np.random.rand(10))
-        ax.set_title("Right Model Tree")
+        ax.set_title(f"Left Tree Plot 2: {input.treeSelLeft2()}")
+        return fig
+
+    # Placeholder tree plot for Right pair 1
+    @output
+    @render.plot
+    def treePlotRight1():
+        import matplotlib.pyplot as plt
+        import numpy as np
+        fig, ax = plt.subplots()
+        ax.plot(np.random.rand(10))
+        ax.set_title(f"Right Tree Plot 1: {input.treeSelRight1()}")
+        return fig
+
+    # Placeholder tree plot for Right pair 2
+    @output
+    @render.plot
+    def treePlotRight2():
+        import matplotlib.pyplot as plt
+        import numpy as np
+        fig, ax = plt.subplots()
+        ax.plot(np.random.rand(10))
+        ax.set_title(f"Right Tree Plot 2: {input.treeSelRight2()}")
         return fig
 
     @output
