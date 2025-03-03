@@ -116,7 +116,7 @@ class DecisionTreeModel:
 
         return y_pred
 
-    def plot_tree(self, ccp_alpha=0.01, max_depth=None, return_results = 0):
+    def plot_results(self, ccp_alpha=0.01, max_depth=None, return_results = 0):
         # Train a decision tree with the chosen complexity parameter and visualize it
         dt = DecisionTreeClassifier(ccp_alpha=ccp_alpha, random_state=self.random_state, max_depth=max_depth)
 
@@ -134,7 +134,7 @@ class DecisionTreeModel:
 
         fig, ax = plt.subplots()
         plot_tree(dt, feature_names=self.X_train.columns, class_names=['0', '1'], filled=True, ax=ax)
-        ax.set_title(f"Decision Tree (learning rate={ccp_alpha})")
+        ax.set_title(f"Decision Tree")
 
         if return_results:
             return train_accuracy, test_accuracy
@@ -206,6 +206,27 @@ class RandomForestModel:
 
         plt.tight_layout()
         plt.show()
+
+    def plot_results(self, ccp_alpha = 0.01, max_features = "sqrt", n_estimators=10, max_depth=None, return_results = 0):
+        # Train a decision tree with the chosen complexity parameter and visualize it
+        rf = RandomForestClassifier(n_estimators=n_estimators, max_features=max_features, ccp_alpha=ccp_alpha, random_state=self.random_state, max_depth=max_depth)
+
+        rf.fit(self.X_train, self.y_train)
+
+        # Predict on the training set
+        y_train_pred = rf.predict(self.X_train)
+        train_accuracy = accuracy_score(self.y_train, y_train_pred)
+        print("Random Forest Training Accuracy:", train_accuracy)
+
+        # Predict on the test set
+        y_test_pred = rf.predict(self.X_test)
+        test_accuracy = accuracy_score(self.y_test, y_test_pred)
+        print("Random Forest Test Accuracy:", test_accuracy)
+
+        if return_results:
+            return train_accuracy, test_accuracy
+        else:    
+            return rf.estimators_
 
 
 # --------------
@@ -348,13 +369,14 @@ if __name__ == "__main__":
     dt_model = DecisionTreeModel(X_train, y_train, X_test, y_test)
     dt_model.fine_tune()
     dt_model.predict()
-    dt_model.plot_tree()
+    dt_model.plot_results()
 
     # Random Forest
     rf_model = RandomForestModel(X_train, y_train, X_test, y_test)
     rf_model.fine_tune()
     rf_model.predict()
     rf_model.plot_feature_importance()
+    rf_model.plot_results()
 
     # AdaBoost
     ada_model = AdaBoostModel(X_train, y_train, X_test, y_test)
