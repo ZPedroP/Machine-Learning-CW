@@ -87,6 +87,7 @@ class DecisionTreeModel:
         self.y_test = y_test
         self.random_state = random_state
         self.best_estimator_ = None
+        self.model_description = "Decision trees start with the entire dataset and recursively choose the best feature and corresponding threshold that minimises impurity, measured by the Gini Index. Each split divides the data into two subregions, making the best local decision at each step. This results in a tree structure with internal nodes where decisions are made, branches representing pathways from one decision to the next, and terminal nodes which provide the final predictions."
 
     def fine_tune(self, param_grid={"ccp_alpha": [1, 0.1, 0.01, 0.001, 0.0001]}, cv=20):
         grid = GridSearchCV(DecisionTreeClassifier(random_state=self.random_state),
@@ -121,10 +122,11 @@ class DecisionTreeModel:
 
         dt.fit(self.X_train, self.y_train)
 
-        fig, ax = subplots(figsize=(4, 4), dpi=300)
+        fig, ax = plt.subplots()
         plot_tree(dt, feature_names=self.X_train.columns, class_names=['0', '1'], filled=True, ax=ax)
+        ax.set_title(f"Decision Tree (learning rate={ccp_alpha})")
 
-        plt.show()
+        return fig
 
 
 # -------------------
@@ -140,6 +142,7 @@ class RandomForestModel:
         self.n_estimators = n_estimators
         self.random_state = random_state
         self.best_estimator_ = None
+        self.model_description = "Random forests sample multiple trees (i.e. a forest) using bootstrapped training data (i.e. random). Each tree produces an independent prediction, and the final output is determined by majority voting. To reduce correlation among trees, random forests introduce additional randomness: when splitting a node, each tree considers only a random subset of features (often m=sqrt(p)), where p is the number of features in the dataset (James et al. 2013)."
 
     def fine_tune(self, param_grid={"max_features": [5, 10, 20, 30, 40, 50, "sqrt"]}, cv=10):
         grid = GridSearchCV(RandomForestClassifier(n_estimators=self.n_estimators, bootstrap=True,
@@ -205,6 +208,7 @@ class AdaBoostModel:
         self.n_estimators = n_estimators
         self.random_state = random_state
         self.best_estimator_ = None
+        self.model_description = "AdaBoost Model placeholder description"
 
     def fine_tune(self, param_grid={"learning_rate": [0.001, 0.01, 0.1, 1]}, cv=10):
         base_estimator = DecisionTreeClassifier(max_depth=3)
@@ -268,6 +272,7 @@ class GradientBoostingModel:
         self.max_depth = max_depth
         self.random_state = random_state
         self.best_estimator_ = None
+        self.model_description = "Gradient Boosting Model placeholder description"
 
     def fine_tune(self, param_grid={"learning_rate": [0.001, 0.01, 0.1, 1]}, cv=10):
         gb = GradientBoostingClassifier(max_depth=self.max_depth, n_estimators=self.n_estimators,
