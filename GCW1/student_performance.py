@@ -17,11 +17,13 @@ from sklearn.pipeline import Pipeline
 # --------------------------------------------------
 
 class DataProcessor:
-    def __init__(self, file_path):
+    def __init__(self, file_path, multiclass=0):
         self.file_path = file_path
         self.df = None
         self.X = None
         self.y = None
+        self.class_names = None
+        self.multiclass = multiclass
 
     def load_data(self):
         # Read CSV using semicolon delimiter and proper header assignment
@@ -41,7 +43,13 @@ class DataProcessor:
         y_array = np.reshape(y_df, (-1,))
 
         # Binarize: grade < 10 -> 0 (fail), grade >= 10 -> 1 (pass)
-        self.y = np.where(y_array < 10, 0, 1)
+        if self.multiclass:
+            self.y = y_array
+            self.class_names = [str(cl_name) for cl_name in range(0, 21)]
+        else:
+            self.y = np.where(y_array < 10, 0, 1)
+            self.class_names = ["0", "1"]
+
         return self.X, self.y
 
     def preprocess(self, X):
@@ -116,7 +124,8 @@ class DecisionTreeModel:
 
         return y_pred
 
-    def plot_results(self, ccp_alpha=0.01, max_depth=None, return_results = 0):
+    # TODO: Fix this class_names
+    def plot_results(self, ccp_alpha=0.01, max_depth=None, return_results=0, class_names=['0', '1']):
         # Train a decision tree with the chosen complexity parameter and visualize it
         dt = DecisionTreeClassifier(ccp_alpha=ccp_alpha, random_state=self.random_state, max_depth=max_depth)
 
@@ -133,14 +142,13 @@ class DecisionTreeModel:
         print("Decision Tree Test Accuracy:", test_accuracy)
 
         fig, ax = plt.subplots()
-        plot_tree(dt, feature_names=self.X_train.columns, class_names=['0', '1'], filled=True, ax=ax)
+        plot_tree(dt, feature_names=self.X_train.columns, class_names=class_names, filled=True, ax=ax)
         ax.set_title(f"Decision Tree")
 
         if return_results:
             return train_accuracy, test_accuracy
         else:
             return fig
-
 
 # -------------------
 # Random Forest Model
