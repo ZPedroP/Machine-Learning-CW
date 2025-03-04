@@ -1,5 +1,3 @@
-# TODO: Currently the plot_tree() function is being used to plot and get the results. Right now it is resulting in this function being called twice. As long as the random state is kept the same, the accuracy results should represent the results from the tree correctly. The code should be update so it only calls the plot_tree() function once.
-
 import os
 import sys
 
@@ -20,7 +18,9 @@ file_path = ROOT_PATH + '/datasets/student-mat.csv'
 
 # Define the user interface (UI)
 app_ui = ui.page_fluid(
-    ui.h2("Classification App"),
+    ui.h2("Student Performance - Decision Tree vs Random Forest Visualisation"),
+    ui.output_text("app_description"),
+    ui.br(),
 
     # Top-level input: switch between Binary or Multiclass
     ui.row(
@@ -28,7 +28,7 @@ app_ui = ui.page_fluid(
             4,
             ui.input_select(
                 "classification_type",
-                "Classification Type",
+                ui.h5("Classification Type"),
                 {"Binary": "Binary", "Multiclass": "Multiclass"},
                 selected="Binary"
             )
@@ -43,7 +43,7 @@ app_ui = ui.page_fluid(
             # Model selection dropdown
             ui.input_select(
                 "modelSelLeft",
-                "Model Selection",
+                ui.h5("Model Selection"),
                 {
                     "Decision Tree": "Decision Tree",
                     "Random Forest": "Random Forest",
@@ -221,7 +221,7 @@ app_ui = ui.page_fluid(
             # Model selection dropdown
             ui.input_select(
                 "modelSelRight",
-                "Model Selection",
+                ui.h5("Model Selection"),
                 {
                     "Decision Tree": "Decision Tree",
                     "Random Forest": "Random Forest",
@@ -425,6 +425,11 @@ def server(input, output, session):
         update_models()
 
     @output
+    @render.text
+    def app_description():
+        return "This app explores Decision Tree and Random Forest approaches for classifying Mathematics Student Performance. In machine learning, classification tasks aim to understand the relationship between explanatory variables (feature space) and the response variable (target) by fitting a model that maps the feature space to the response. Decision Trees and Random Forests are examples of supervised learning algorithms commonly used for such tasks, where a target variable  Y  is divided into multiple classes, and a feature matrix  X  is used to train the model. In addition to these algorithms, users can also explore AdaBoost and Gradient Boosting models. The app allows users to select the model type and adjust hyperparameters to observe their impact on performance. Additionally, users can choose between binary and multiclass classification tasks, providing flexibility in model experimentation."
+
+    @output
     @render.ui
     def dynamic_tree_selection_left_rf():
         if input.modelSelLeft() == "Random Forest":
@@ -587,19 +592,19 @@ def server(input, output, session):
     def trainScoreLeft():
         if input.modelSelLeft() == "Decision Tree":
             return (
-                "Train Score: {:.4}".format(decision_tree_model().plot_results(ccp_alpha=input.paramSelLeftDt1(), max_depth=input.paramSelLeftDt2(), return_results=1, class_names=data_processor().class_names)[0])
+                "Train Score: {:.4}%".format(decision_tree_model().plot_results(ccp_alpha=input.paramSelLeftDt1(), max_depth=input.paramSelLeftDt2(), return_results=1, class_names=data_processor().class_names)[0]*100)
             )
         elif input.modelSelLeft() == "Random Forest":
              return (
-                "Train Score: {:.4}".format(random_forest_model().plot_results(ccp_alpha=input.paramSelLeftRf1() , max_depth=input.paramSelLeftRf2(), n_estimators=input.paramSelLeftRf3(), max_features=input.paramSelLeftRf4(), return_results=1)[0])
+                "Train Score: {:.4}%".format(random_forest_model().plot_results(ccp_alpha=input.paramSelLeftRf1() , max_depth=input.paramSelLeftRf2(), n_estimators=input.paramSelLeftRf3(), max_features=input.paramSelLeftRf4(), return_results=1)[0]*100)
              )
         elif input.modelSelLeft() == "AdaBoost":
              return (
-                "Train Score: {:.4}".format(ada_boost_model().plot_results(learning_rate=input.paramSelLeftAda1() , base_estimator_max_depth=input.paramSelLeftAda2(), n_estimators=input.paramSelLeftAda3(), return_results=1)[0])
+                "Train Score: {:.4}%".format(ada_boost_model().plot_results(learning_rate=input.paramSelLeftAda1() , base_estimator_max_depth=input.paramSelLeftAda2(), n_estimators=input.paramSelLeftAda3(), return_results=1)[0]*100)
              )
         else:
             return (
-                "Train Score: {:.4}".format(gradient_boosting_model().plot_results(learning_rate=input.paramSelLeftGb1(), max_depth=input.paramSelLeftGb2(), n_estimators=input.paramSelLeftGb3(), max_features=input.paramSelLeftGb4(), return_results=1)[0])
+                "Train Score: {:.4}%".format(gradient_boosting_model().plot_results(learning_rate=input.paramSelLeftGb1(), max_depth=input.paramSelLeftGb2(), n_estimators=input.paramSelLeftGb3(), max_features=input.paramSelLeftGb4(), return_results=1)[0]*100)
             )
 
     @output
@@ -607,19 +612,19 @@ def server(input, output, session):
     def testScoreLeft():
         if input.modelSelLeft() == "Decision Tree":
             return (
-                "Test Score: {:.4}".format(decision_tree_model().plot_results(ccp_alpha=input.paramSelLeftDt1(), max_depth=input.paramSelLeftDt2(), return_results=1, class_names=data_processor().class_names)[1])
+                "Test Score: {:.4}%".format(decision_tree_model().plot_results(ccp_alpha=input.paramSelLeftDt1(), max_depth=input.paramSelLeftDt2(), return_results=1, class_names=data_processor().class_names)[1]*100)
             )
         elif input.modelSelLeft() == "Random Forest":
              return (
-                "Test Score: {:.4}".format(random_forest_model().plot_results(ccp_alpha=input.paramSelLeftRf1() , max_depth=input.paramSelLeftRf2(), n_estimators=input.paramSelLeftRf3(), max_features=input.paramSelLeftRf4(), return_results=1)[1])
+                "Test Score: {:.4}%".format(random_forest_model().plot_results(ccp_alpha=input.paramSelLeftRf1() , max_depth=input.paramSelLeftRf2(), n_estimators=input.paramSelLeftRf3(), max_features=input.paramSelLeftRf4(), return_results=1)[1]*100)
              )
         elif input.modelSelLeft() == "AdaBoost":
              return (
-                "Test Score: {:.4}".format(ada_boost_model().plot_results(learning_rate=input.paramSelLeftAda1() , base_estimator_max_depth=input.paramSelLeftAda2(), n_estimators=input.paramSelLeftAda3(), return_results=1)[1])
+                "Test Score: {:.4}%".format(ada_boost_model().plot_results(learning_rate=input.paramSelLeftAda1() , base_estimator_max_depth=input.paramSelLeftAda2(), n_estimators=input.paramSelLeftAda3(), return_results=1)[1]*100)
              )
         else:
             return (
-                "Test Score: {:.4}".format(gradient_boosting_model().plot_results(learning_rate=input.paramSelLeftGb1(), max_depth=input.paramSelLeftGb2(), n_estimators=input.paramSelLeftGb3(), max_features=input.paramSelLeftGb4(), return_results=1)[1])
+                "Test Score: {:.4}%".format(gradient_boosting_model().plot_results(learning_rate=input.paramSelLeftGb1(), max_depth=input.paramSelLeftGb2(), n_estimators=input.paramSelLeftGb3(), max_features=input.paramSelLeftGb4(), return_results=1)[1]*100)
             )
 
     @output
@@ -627,19 +632,19 @@ def server(input, output, session):
     def trainScoreRight():
         if input.modelSelRight() == "Decision Tree":
             return (
-                "Train Score: {:.4}".format(decision_tree_model().plot_results(ccp_alpha=input.paramSelRightDt1(), max_depth=input.paramSelRightDt2(), return_results=1, class_names=data_processor().class_names)[0])
+                "Train Score: {:.4}%".format(decision_tree_model().plot_results(ccp_alpha=input.paramSelRightDt1(), max_depth=input.paramSelRightDt2(), return_results=1, class_names=data_processor().class_names)[0]*100)
             )
         elif input.modelSelRight() == "Random Forest":
              return (
-                "Train Score: {:.4}".format(random_forest_model().plot_results(ccp_alpha=input.paramSelRightRf1() , max_depth=input.paramSelRightRf2(), n_estimators=input.paramSelRightRf3(), max_features=input.paramSelRightRf4(), return_results=1)[0])
+                "Train Score: {:.4}%".format(random_forest_model().plot_results(ccp_alpha=input.paramSelRightRf1() , max_depth=input.paramSelRightRf2(), n_estimators=input.paramSelRightRf3(), max_features=input.paramSelRightRf4(), return_results=1)[0]*100)
              )
         elif input.modelSelRight() == "AdaBoost":
              return (
-                "Train Score: {:.4}".format(ada_boost_model().plot_results(learning_rate=input.paramSelRightAda1() , base_estimator_max_depth=input.paramSelRightAda2(), n_estimators=input.paramSelRightAda3(), return_results=1)[0])
+                "Train Score: {:.4}%".format(ada_boost_model().plot_results(learning_rate=input.paramSelRightAda1() , base_estimator_max_depth=input.paramSelRightAda2(), n_estimators=input.paramSelRightAda3(), return_results=1)[0]*100)
              )
         else:
             return (
-                "Train Score: {:.4}".format(gradient_boosting_model().plot_results(learning_rate=input.paramSelRightGb1(), max_depth=input.paramSelRightGb2(), n_estimators=input.paramSelRightGb3(), max_features=input.paramSelRightGb4(), return_results=1)[0])
+                "Train Score: {:.4}%".format(gradient_boosting_model().plot_results(learning_rate=input.paramSelRightGb1(), max_depth=input.paramSelRightGb2(), n_estimators=input.paramSelRightGb3(), max_features=input.paramSelRightGb4(), return_results=1)[0]*100)
             )
 
     @output
@@ -647,19 +652,19 @@ def server(input, output, session):
     def testScoreRight():
         if input.modelSelRight() == "Decision Tree":
             return (
-                "Test Score: {:.4}".format(decision_tree_model().plot_results(ccp_alpha=input.paramSelRightDt1(), max_depth=input.paramSelRightDt2(), return_results=1, class_names=data_processor().class_names)[1])
+                "Test Score: {:.4}%".format(decision_tree_model().plot_results(ccp_alpha=input.paramSelRightDt1(), max_depth=input.paramSelRightDt2(), return_results=1, class_names=data_processor().class_names)[1]*100)
             )
         elif input.modelSelRight() == "Random Forest":
              return (
-                "Train Score: {:.4}".format(random_forest_model().plot_results(ccp_alpha=input.paramSelRightRf1() , max_depth=input.paramSelRightRf2(), n_estimators=input.paramSelRightRf3(), max_features=input.paramSelRightRf4(), return_results=1)[1])
+                "Train Score: {:.4}%".format(random_forest_model().plot_results(ccp_alpha=input.paramSelRightRf1() , max_depth=input.paramSelRightRf2(), n_estimators=input.paramSelRightRf3(), max_features=input.paramSelRightRf4(), return_results=1)[1]*100)
              )
         elif input.modelSelRight() == "AdaBoost":
              return (
-                "Test Score: {:.4}".format(ada_boost_model().plot_results(learning_rate=input.paramSelRightAda1() , base_estimator_max_depth=input.paramSelRightAda2(), n_estimators=input.paramSelRightAda3(), return_results=1)[1])
+                "Test Score: {:.4}%".format(ada_boost_model().plot_results(learning_rate=input.paramSelRightAda1() , base_estimator_max_depth=input.paramSelRightAda2(), n_estimators=input.paramSelRightAda3(), return_results=1)[1]*100)
              )
         else:
             return (
-                "Test Score: {:.4}".format(gradient_boosting_model().plot_results(learning_rate=input.paramSelRightGb1(), max_depth=input.paramSelRightGb2(), n_estimators=input.paramSelRightGb3(), max_features=input.paramSelRightGb4(), return_results=1)[1])
+                "Test Score: {:.4}%".format(gradient_boosting_model().plot_results(learning_rate=input.paramSelRightGb1(), max_depth=input.paramSelRightGb2(), n_estimators=input.paramSelRightGb3(), max_features=input.paramSelRightGb4(), return_results=1)[1]*100)
             )
 
 # Create the Shiny app object
