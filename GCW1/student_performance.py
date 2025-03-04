@@ -124,7 +124,6 @@ class DecisionTreeModel:
 
         return y_pred
 
-    # TODO: Fix this class_names
     def plot_results(self, ccp_alpha=0.01, max_depth=None, return_results=0, class_names=['0', '1']):
         # Train a decision tree with the chosen complexity parameter and visualize it
         dt = DecisionTreeClassifier(ccp_alpha=ccp_alpha, random_state=self.random_state, max_depth=max_depth)
