@@ -17,15 +17,6 @@ from student_performance import GradientBoostingModel
 
 # Data loading and preprocessing
 file_path = ROOT_PATH + '/datasets/student-mat.csv'
-# data_processor = DataProcessor(file_path)
-# X, y = data_processor.load_data()
-# X_preprocessed_df = data_processor.preprocess(X)
-# X_train, X_test, y_train, y_test = train_test_split(X_preprocessed_df, y, test_size=0.3, random_state=42)
-
-# decision_tree_model = DecisionTreeModel(X_train, y_train, X_test, y_test)
-# random_forest_model = RandomForestModel(X_train, y_train, X_test, y_test)
-# ada_boost_model = AdaBoostModel(X_train, y_train, X_test, y_test)
-# gradient_boosting_model = GradientBoostingModel(X_train, y_train, X_test, y_test)
 
 # Define the user interface (UI)
 app_ui = ui.page_fluid(
@@ -63,6 +54,7 @@ app_ui = ui.page_fluid(
             ),
             ui.h3("Model Description"),
             ui.output_text("modelDescLeft"),
+            ui.br(),
 
             # Parameter slider and tree selection with corresponding plot
             ui.panel_conditional(
@@ -240,6 +232,7 @@ app_ui = ui.page_fluid(
             ),
             ui.h3("Model Description"),
             ui.output_text("modelDescRight"),
+            ui.br(),
 
             # Parameter slider and tree selection with corresponding plot
             ui.panel_conditional(
@@ -414,7 +407,6 @@ def server(input, output, session):
     # Function to update models based on classification type
     def update_models():
         multiclass_option = 1 if input.classification_type() == "Multiclass" else 0
-        # data_processor, X, y, X_train, X_test, y_train, y_test
 
         data_processor.set(DataProcessor(file_path, multiclass=multiclass_option))
         X, y = data_processor().load_data()
@@ -422,24 +414,15 @@ def server(input, output, session):
         X_train, X_test, y_train, y_test = train_test_split(X_preprocessed_df, y, test_size=0.3, random_state=42)
 
         # Update models reactively
-        # global decision_tree_model, random_forest_model, ada_boost_model, gradient_boosting_model
         decision_tree_model.set(DecisionTreeModel(X_train, y_train, X_test, y_test))
         random_forest_model.set(RandomForestModel(X_train, y_train, X_test, y_test))
         ada_boost_model.set(AdaBoostModel(X_train, y_train, X_test, y_test))
         gradient_boosting_model.set(GradientBoostingModel(X_train, y_train, X_test, y_test))
 
-        # **Mark data as updated**
-        # data_updated.set(True)
-
     # **Trigger update when classification_type changes**
     @reactive.effect
     def watch_classification_type():
         update_models()
-
-    # Ensure all outputs depend on the new dataset when `classification_type` changes
-    # @reactive.effect
-    # def ensure_dependency():
-    #     data_updated.get()  # Forces reactive dependency
 
     @output
     @render.ui
