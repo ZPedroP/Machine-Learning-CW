@@ -5,6 +5,9 @@ from matplotlib.pyplot import subplots
 from sklearn.tree import DecisionTreeClassifier, plot_tree
 from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier, GradientBoostingClassifier
 from sklearn.linear_model import LogisticRegression
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.svm import SVC
+from sklearn.naive_bayes import GaussianNB
 from sklearn.model_selection import train_test_split, GridSearchCV
 from sklearn.metrics import accuracy_score
 from ISLP import confusion_table
@@ -114,7 +117,7 @@ class DecisionTreeModel:
         # Predict on the test set
         y_test_pred = self.best_estimator_.predict(self.X_test)
         test_accuracy = accuracy_score(self.y_test, y_test_pred)
-        print("Decision Tree Test Accuracy:", test_accuracy)
+        print("Decision Tree Testing Accuracy:", test_accuracy)
 
         fig, ax = plt.subplots()
         plot_tree(self.best_estimator_, feature_names=self.X_train.columns, class_names=['0', '1'], filled=True, ax=ax)
@@ -168,7 +171,7 @@ class RandomForestModel:
         # predict test set labels
         y_test_pred = self.best_estimator_.predict(self.X_test)
         test_accuracy = accuracy_score(self.y_test, y_test_pred)
-        print("Random Forest Test Accuracy:", test_accuracy)
+        print("Random Forest Testing Accuracy:", test_accuracy)
 
         confusion_table(y_test_pred, self.y_test)
 
@@ -231,7 +234,7 @@ class AdaBoostModel:
 
         y_test_pred = self.best_estimator_.predict(self.X_test)
         test_accuracy = accuracy_score(self.y_test, y_test_pred)
-        print("AdaBoost Accuracy:", test_accuracy)
+        print("AdaBoost Testing Accuracy:", test_accuracy)
 
         confusion_table(y_test_pred, self.y_test)
 
@@ -292,12 +295,12 @@ class GradientBoostingModel:
         # Predict on the training set
         y_train_pred = self.best_estimator_.predict(self.X_train)
         train_accuracy = accuracy_score(self.y_train, y_train_pred)
-        print("Gradient Boost Training Accuracy:", train_accuracy)
+        print("Gradient Boosting Training Accuracy:", train_accuracy)
 
         # Predict on the test set
         y_test_pred = self.best_estimator_.predict(self.X_test)
         test_accuracy = accuracy_score(self.y_test, y_test_pred)
-        print("Gradient Boosting Accuracy:", test_accuracy)
+        print("Gradient Boosting Testing Accuracy:", test_accuracy)
 
         confusion_table(y_test_pred, self.y_test)
 
@@ -362,7 +365,134 @@ class LogisticRegressionModel:
         # Predict on the test set
         y_test_pred = self.best_estimator_.predict(self.X_test)
         test_accuracy = accuracy_score(self.y_test, y_test_pred)
-        print("Logistic Regression Accuracy:", test_accuracy)
+        print("Logistic Regression Testing Accuracy:", test_accuracy)
+
+        confusion_table(y_test_pred, self.y_test)
+
+        return train_accuracy, test_accuracy
+
+
+# -----------------------
+# kNN Model
+# -----------------------
+class kNNModel:
+    def __init__(self, X_train, y_train, X_test, y_test, n_neighbors=5):
+        self.X_train = X_train
+        self.y_train = y_train
+        self.X_test = X_test
+        self.y_test = y_test
+        self.n_neighbors = n_neighbors
+        self.best_estimator_ = None
+        self.model_description = ""
+
+    def fine_tune(self, param_grid={"n_neighbors": np.arange(1, 21)}, cv=20):
+        knn = KNeighborsClassifier()
+        grid = GridSearchCV(knn, param_grid, scoring='roc_auc', cv=cv)
+
+        grid.fit(self.X_train, self.y_train)
+
+        self.best_estimator_ = grid.best_estimator_
+        print("kNN Best Params:", grid.best_params_)
+        for mean, std, params in zip(grid.cv_results_["mean_test_score"],
+                                     grid.cv_results_["std_test_score"],
+                                     grid.cv_results_["params"]):
+            print("%0.3f (+/-%0.03f) for %r" % (mean, std, params))
+
+        return self.best_estimator_
+
+    def predict(self):
+        if self.best_estimator_ is None:
+            raise ValueError("Model not tuned. Call tune() first.")
+
+        # Predict on the training set
+        y_train_pred = self.best_estimator_.predict(self.X_train)
+        train_accuracy = accuracy_score(self.y_train, y_train_pred)
+        print("kNN Training Accuracy:", train_accuracy)
+
+        # Predict on the test set
+        y_test_pred = self.best_estimator_.predict(self.X_test)
+        test_accuracy = accuracy_score(self.y_test, y_test_pred)
+        print("kNN Testing Accuracy:", test_accuracy)
+
+        confusion_table(y_test_pred, self.y_test)
+
+        return train_accuracy, test_accuracy
+
+
+# -----------------------
+# SVM Model
+# -----------------------
+class SVMModel:
+    def __init__(self, X_train, y_train, X_test, y_test, kernel='rbf', C=1.0, gamma='scale'):
+        self.X_train = X_train
+        self.y_train = y_train
+        self.X_test = X_test
+        self.y_test = y_test
+        self.kernel = kernel
+        self.C = C
+        self.gamma = gamma
+        self.best_estimator_ = None
+        self.model_description = ""
+
+    def fine_tune(self, param_grid={"kernel": ["rbf", "linear", "poly", "sigmoid"], "gamma": [1,1e-1,1e-2,1e-3, 1e-4], "C": [1, 10, 100,1000]}, cv=20):
+        svc = SVC()
+        grid = GridSearchCV(svc, param_grid, scoring='accuracy', cv=cv)
+
+        grid.fit(self.X_train, self.y_train)
+
+        self.best_estimator_ = grid.best_estimator_
+        print("SVM Best Params:", grid.best_params_)
+        for mean, std, params in zip(grid.cv_results_["mean_test_score"],
+                                     grid.cv_results_["std_test_score"],
+                                     grid.cv_results_["params"]):
+            print("%0.3f (+/-%0.03f) for %r" % (mean, std, params))
+
+        return self.best_estimator_
+
+    def predict(self):
+        if self.best_estimator_ is None:
+            raise ValueError("Model not tuned. Call tune() first.")
+
+        # Predict on the training set
+        y_train_pred = self.best_estimator_.predict(self.X_train)
+        train_accuracy = accuracy_score(self.y_train, y_train_pred)
+        print("SVM Training Accuracy:", train_accuracy)
+
+        # Predict on the test set
+        y_test_pred = self.best_estimator_.predict(self.X_test)
+        test_accuracy = accuracy_score(self.y_test, y_test_pred)
+        print("SVM Testing Accuracy:", test_accuracy)
+
+        confusion_table(y_test_pred, self.y_test)
+
+        return train_accuracy, test_accuracy
+    
+
+# -----------------------
+# Gaussian Naive Bayes Model
+# -----------------------
+class GaussianNBModel:
+    def __init__(self, X_train, y_train, X_test, y_test):
+        self.X_train = X_train
+        self.y_train = y_train
+        self.X_test = X_test
+        self.y_test = y_test
+        self.model_description = ""
+
+    def predict(self):
+        gnb = GaussianNB()
+
+        gnb.fit(self.X_train, self.y_train)
+
+        # Predict on the training set
+        y_train_pred = gnb.predict(self.X_train)
+        train_accuracy = accuracy_score(self.y_train, y_train_pred)
+        print("GaussianNB Training Accuracy:", train_accuracy)
+
+        # Predict on the test set
+        y_test_pred = gnb.predict(self.X_test)
+        test_accuracy = accuracy_score(self.y_test, y_test_pred)
+        print("GaussianNB Testing Accuracy:", test_accuracy)
 
         confusion_table(y_test_pred, self.y_test)
 
@@ -386,21 +516,35 @@ if __name__ == "__main__":
     rf_model = RandomForestModel(X_train, y_train, X_test, y_test)
     rf_model.fine_tune()
     rf_model.predict()
-    rf_model.plot_feature_importance()
+    # rf_model.plot_feature_importance()
 
     # AdaBoost
     ada_model = AdaBoostModel(X_train, y_train, X_test, y_test)
     ada_model.fine_tune()
     ada_model.predict()
-    ada_model.plot_feature_importance()
+    # ada_model.plot_feature_importance()
 
     # Gradient Boosting
     gb_model = GradientBoostingModel(X_train, y_train, X_test, y_test)
     gb_model.fine_tune()
     gb_model.predict()
-    gb_model.plot_feature_importance()
+    # gb_model.plot_feature_importance()
 
     # Logistic Regression
     lr_model = LogisticRegressionModel(X_train, y_train, X_test, y_test)
     lr_model.fine_tune()
     lr_model.predict()
+
+    # kNN
+    kNN_model = kNNModel(X_train, y_train, X_test, y_test)
+    kNN_model.fine_tune()
+    kNN_model.predict()
+
+    # SVM
+    SVM_model = SVMModel(X_train, y_train, X_test, y_test)
+    SVM_model.fine_tune()
+    SVM_model.predict()
+
+    # SVM
+    GNB_model = GaussianNBModel(X_train, y_train, X_test, y_test)
+    GNB_model.predict()
