@@ -434,7 +434,7 @@ class SVMModel:
         self.best_estimator_ = None
         self.model_description = ""
 
-    def fine_tune(self, param_grid={"kernel": ["rbf", "linear", "poly", "sigmoid"], "gamma": [1,1e-1,1e-2,1e-3, 1e-4], "C": [1, 10, 100,1000]}, cv=20):
+    def fine_tune(self, param_grid={"kernel": ["rbf", "linear"], "gamma": [1,1e-1,1e-2,1e-3, 1e-4], "C": [1, 10, 100,1000]}, cv=10):
         svc = SVC()
         grid = GridSearchCV(svc, param_grid, scoring='accuracy', cv=cv)
 
@@ -545,6 +545,6 @@ if __name__ == "__main__":
     SVM_model.fine_tune()
     SVM_model.predict()
 
-    # SVM
+    # GNB
     GNB_model = GaussianNBModel(X_train, y_train, X_test, y_test)
     GNB_model.predict()
