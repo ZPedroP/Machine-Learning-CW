@@ -1,3 +1,5 @@
+import os
+import csv
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -11,8 +13,7 @@ from sklearn.naive_bayes import GaussianNB
 from sklearn.model_selection import train_test_split, GridSearchCV
 from sklearn.metrics import accuracy_score
 from ISLP import confusion_table
-from sklearn.preprocessing import OneHotEncoder
-from sklearn.impute import SimpleImputer
+from sklearn.preprocessing import OneHotEncoder, StandardScaler, FunctionTransformer, MinMaxScaler
 from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
 
@@ -31,6 +32,7 @@ class DataProcessor:
         # Read CSV using semicolon delimiter and proper header assignment
         column_names = pd.read_csv(self.file_path, nrows=0, delimiter=',').columns.tolist()
         self.df = pd.read_csv(self.file_path, skiprows=1, delimiter=',', names=column_names)
+        self.df.dropna(inplace=True) # drop rows with NAs, and replace the original dataframe
 
         # Features: all but the last 3 columns; Targets: last 3 columns (grades)
         feature_columns = column_names[:-1]
@@ -41,24 +43,51 @@ class DataProcessor:
         self.y = self.df[target_columns]
 
         # TODO: Make sure to address the class imbalance
+        print(self.X.dtypes)
+        print(self.X.head())
         print(self.y.value_counts())
 
         return self.X, self.y
 
     def preprocess(self, X):
-        # Identify categorical columns
+        # Identify categorical and numerical columns
         categorical_cols = X.select_dtypes(include=['object']).columns
+        numerical_cols = X.select_dtypes(include=['int64', 'float64']).columns
+
+        # Detect non-normally distributed numerical features (high skewness)
+        skewed_features = [col for col in numerical_cols if abs(X[col].skew()) > 1]
+        normal_features = [col for col in numerical_cols if col not in skewed_features]
+
+        # StandardScaler for normally distributed features
+        normal_transformer = Pipeline(steps=[
+            ('scaler', StandardScaler())
+        ])
+
+        # PowerTransformer (log transform) for skewed numerical features
+        skewed_transformer = Pipeline(steps=[
+            ('log', FunctionTransformer(np.log1p, validate=True, feature_names_out="one-to-one")),  # log(x+1) to handle zeros
+            ('scaler', StandardScaler())
+        ])
+
+        # MinMaxScaler for bounded numerical features (e.g., percentages)
+        bounded_features = [col for col in numerical_cols if X[col].min() >= 0 and X[col].max() <= 1]
+        bounded_transformer = Pipeline(steps=[
+            ('scaler', MinMaxScaler())
+        ])
 
         # Preprocessing for categorical data
         categorical_transformer = Pipeline(steps=[
-            ('imputer', SimpleImputer(strategy='constant', fill_value='missing')),
             ('onehot', OneHotEncoder(handle_unknown='ignore'))
         ])
 
-        # Bundle preprocessing for numerical and categorical data
+        # Combine all transformations
         preprocessor = ColumnTransformer(
-            transformers=[('cat', categorical_transformer, categorical_cols)],
-            remainder='passthrough'
+            transformers=[
+                ('normal', normal_transformer, normal_features),
+                ('skewed', skewed_transformer, skewed_features),
+                ('bounded', bounded_transformer, bounded_features),
+                ('cat', categorical_transformer, categorical_cols)
+            ]
         )
 
         # Fit the preprocessing pipeline on the data
@@ -70,6 +99,7 @@ class DataProcessor:
         # Get the feature names after one-hot encoding
         feature_names = preprocessor.get_feature_names_out()
 
+        print(feature_names)
         # Convert the transformed data back to DataFrames
         X_preprocessed_df = pd.DataFrame(X_preprocessed, columns=feature_names, index=X.index)
 
@@ -326,7 +356,7 @@ class GradientBoostingModel:
 # Logistic Regression Model
 # -----------------------
 class LogisticRegressionModel:
-    def __init__(self, X_train, y_train, X_test, y_test, penalty='l2', C=1.0, max_iter=500, random_state=0):
+    def __init__(self, X_train, y_train, X_test, y_test, penalty='l2', C=1.0, max_iter=1000, random_state=0):
         self.X_train = X_train
         self.y_train = y_train
         self.X_test = X_test
@@ -499,11 +529,85 @@ class GaussianNBModel:
         return train_accuracy, test_accuracy
 
 
+def save_results(models, filename="model_results.csv"):
+    """
+    Saves the accuracy results and best hyperparameters for all models.
+
+    Parameters:
+    - models: A dictionary containing model names as keys and model instances as values.
+    - filename: Name of the CSV file to save results.
+    """
+    results = []
+    
+    for model_name, model in models.items():
+        if hasattr(model, "best_estimator_") and model.best_estimator_ is not None:
+            best_params = model.best_estimator_.get_params()
+        else:
+            best_params = "N/A"  # For models that don't have hyperparameter tuning
+        
+        try:
+            train_acc, test_acc = model.predict()
+        except ValueError:
+            train_acc, test_acc = "N/A", "N/A"  # If model tuning is required before prediction
+
+        results.append({
+            "Model": model_name,
+            "Training Accuracy": train_acc,
+            "Testing Accuracy": test_acc,
+            "Best Parameters": best_params
+        })
+
+    # Save results to a CSV file
+    with open(filename, mode="w", newline="") as file:
+        writer = csv.DictWriter(file, fieldnames=["Model", "Training Accuracy", "Testing Accuracy", "Best Parameters"])
+        writer.writeheader()
+        writer.writerows(results)
+
+    print(f"Results saved to {filename}")
+
+
+def plot_and_save_feature_distribution(df):
+    """
+    Plots the distribution of all features in the dataset.
+    
+    Parameters:
+    - df: DataFrame containing the dataset.
+    """
+    save_dir = "./results"
+
+    if not os.path.exists(save_dir):
+        os.makedirs(save_dir)
+
+    for column in df.columns:
+        plt.figure(figsize=(10, 5))
+        if df[column].dtype == 'object':  # Categorical features
+            df[column].value_counts().plot(kind='bar')
+            plt.title(f"Distribution of {column}")
+            plt.ylabel("Count")
+        else:  # Numerical features
+            df[column].hist(bins=30)
+            plt.title(f"Distribution of {column}")
+            plt.ylabel("Frequency")
+
+        plt.xlabel(column)
+        plt.tight_layout()
+        
+        # Save plot
+        plot_filename = os.path.join(save_dir, f"{column}_distribution.png")
+        plt.savefig(plot_filename)
+        plt.close()
+
+    print(f"Feature distribution plots saved in '{save_dir}'")
+
+
 if __name__ == "__main__":
     # Data loading and preprocessing
     file_path = './datasets/heart-disease.csv'
+
     data_processor = DataProcessor(file_path)
+
     X, y = data_processor.load_data()
+    plot_and_save_feature_distribution(X)
     X_preprocessed_df = data_processor.preprocess(X)
     X_train, X_test, y_train, y_test = train_test_split(X_preprocessed_df, y, test_size=0.3, random_state=42)
 
@@ -548,3 +652,18 @@ if __name__ == "__main__":
     # GNB
     GNB_model = GaussianNBModel(X_train, y_train, X_test, y_test)
     GNB_model.predict()
+
+    # Dictionary to store models
+    models = {
+        "Decision Tree": dt_model,
+        "Random Forest": rf_model,
+        "AdaBoost": ada_model,
+        "Gradient Boosting": gb_model,
+        "Logistic Regression": lr_model,
+        "kNN": kNN_model,
+        "SVM": SVM_model,
+        "GaussianNB": GNB_model
+    }
+
+    # Save results to CSV
+    save_results(models)
