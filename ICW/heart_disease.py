@@ -1,5 +1,6 @@
 import os
 import csv
+from datetime import datetime
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -529,14 +530,14 @@ class GaussianNBModel:
         return train_accuracy, test_accuracy
 
 
-def save_results(models, filename="model_results.csv"):
+def save_results(models):
     """
     Saves the accuracy results and best hyperparameters for all models.
 
     Parameters:
     - models: A dictionary containing model names as keys and model instances as values.
-    - filename: Name of the CSV file to save results.
     """
+
     results = []
     
     for model_name, model in models.items():
@@ -547,6 +548,8 @@ def save_results(models, filename="model_results.csv"):
         
         try:
             train_acc, test_acc = model.predict()
+            train_acc = round(train_acc, 3) if isinstance(train_acc, float) else train_acc
+            test_acc = round(test_acc, 3) if isinstance(test_acc, float) else test_acc
         except ValueError:
             train_acc, test_acc = "N/A", "N/A"  # If model tuning is required before prediction
 
@@ -557,8 +560,13 @@ def save_results(models, filename="model_results.csv"):
             "Best Parameters": best_params
         })
 
-    # Save results to a CSV file
-    with open(filename, mode="w", newline="") as file:
+    # Save results to a CSV file with timestamped filename
+    date_time_str = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    filename = f"model_results_{date_time_str}.csv"
+
+    save_dir = "./results/model_performance/" + filename
+
+    with open(save_dir, mode="w", newline="") as file:
         writer = csv.DictWriter(file, fieldnames=["Model", "Training Accuracy", "Testing Accuracy", "Best Parameters"])
         writer.writeheader()
         writer.writerows(results)
@@ -573,7 +581,7 @@ def plot_and_save_feature_distribution(df):
     Parameters:
     - df: DataFrame containing the dataset.
     """
-    save_dir = "./results"
+    save_dir = "./results/images"
 
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
