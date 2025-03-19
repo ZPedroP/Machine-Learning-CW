@@ -209,21 +209,6 @@ class RandomForestModel:
 
         return train_accuracy, test_accuracy
 
-    def plot_feature_importance(self):
-        importances = self.best_estimator_.feature_importances_
-
-        # plot the most important features
-        indices = np.argsort(importances)
-        top_importances = pd.Series(importances[indices[-10:]], index=self.best_estimator_.feature_names_in_[indices[-10:]])
-
-        fig, ax = subplots()
-
-        top_importances.plot.bar(ax=ax)
-        ax.set_ylabel("Mean decrease in impurity")
-
-        plt.tight_layout()
-        plt.show()
-
 
 # --------------
 # AdaBoost Model
@@ -271,22 +256,6 @@ class AdaBoostModel:
         confusion_table(y_test_pred, self.y_test)
 
         return train_accuracy, test_accuracy
-    
-    def plot_feature_importance(self):
-        importances = self.best_estimator_.feature_importances_
-
-        # plot the most important features
-        indices = np.argsort(importances)
-        # TODO: Not sure about these indices. Check all the functions that used this implementation
-        top_importances = pd.Series(importances[indices[-10:]], index=self.best_estimator_.feature_names_in_[indices[-10:]])
-
-        fig, ax = subplots()
-
-        top_importances.plot.bar(ax=ax)
-        ax.set_ylabel("Mean decrease in impurity")
-
-        plt.tight_layout()
-        plt.show()
 
 
 # -----------------------
@@ -337,21 +306,6 @@ class GradientBoostingModel:
         confusion_table(y_test_pred, self.y_test)
 
         return train_accuracy, test_accuracy
-
-    def plot_feature_importance(self):
-        importances = self.best_estimator_.feature_importances_
-
-        # plot the most important features
-        indices = np.argsort(importances)
-        top_importances = pd.Series(importances[indices[-10:]], index=self.best_estimator_.feature_names_in_[indices[-10:]])
-
-        fig, ax = subplots()
-
-        top_importances.plot.bar(ax=ax)
-        ax.set_ylabel("Mean decrease in impurity")
-
-        plt.tight_layout()
-        plt.show()
 
 
 # -----------------------
@@ -699,19 +653,16 @@ if __name__ == "__main__":
     rf_model = RandomForestModel(X_train, y_train, X_test, y_test)
     rf_model.fine_tune()
     rf_model.make_prediction()
-    # rf_model.plot_feature_importance()
 
     # AdaBoost
     ada_model = AdaBoostModel(X_train, y_train, X_test, y_test)
     ada_model.fine_tune()
     ada_model.make_prediction()
-    # ada_model.plot_feature_importance()
 
     # Gradient Boosting
     gb_model = GradientBoostingModel(X_train, y_train, X_test, y_test)
     gb_model.fine_tune()
     gb_model.make_prediction()
-    # gb_model.plot_feature_importance()
 
     # Logistic Regression
     lr_model = LogisticRegressionModel(X_train, y_train, X_test, y_test)
