@@ -511,20 +511,22 @@ def save_evaluation_metrics(models, X_test, y_test, smote=0):
           Flag indicating whether SMOTE was applied (affects the output filename).
     """
 
+    date_time_str = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+
     # Directory for saving detailed evaluation outputs
     results_dir = "./results/model_performance/"
     if not os.path.exists(results_dir):
         os.makedirs(results_dir)
 
-    overall_results = []  # Will hold overall metrics for each model
+    results = []
 
     # Loop over each model to perform evaluation and save outputs
     for model_name, model in models.items():
         print(f"Evaluating {model_name}...")
 
-        # --- Overall Metrics: Training & Testing Accuracy, Best Parameters ---
+        # --- Metrics: Training & Testing Accuracy, F-1 Score, Best Parameters ---
         try:
-            train_acc, test_acc = model.make_prediction()  # Assumes predict() prints info and returns accuracies
+            train_acc, test_acc = model.make_prediction()
         except Exception as e:
             print(f"Error evaluating {model_name}: {e}")
             train_acc, test_acc = "N/A", "N/A"
@@ -536,10 +538,10 @@ def save_evaluation_metrics(models, X_test, y_test, smote=0):
             best_params = "N/A"
             y_test_pred = model.estimator_.predict(X_test)
 
-        # Compute F1-score (binary classification; adjust pos_label or average if needed)
+        # Compute F1-score
         f1_val = f1_score(y_test, y_test_pred, pos_label=1)
 
-        overall_results.append({
+        results.append({
             "Model": model_name,
             "Training Accuracy": round(train_acc, 3) if isinstance(train_acc, float) else train_acc,
             "Testing Accuracy": round(test_acc, 3) if isinstance(test_acc, float) else test_acc,
@@ -551,7 +553,7 @@ def save_evaluation_metrics(models, X_test, y_test, smote=0):
         cm = confusion_matrix(y_test, y_test_pred)
         cm_df = pd.DataFrame(cm, index=["Actual Negative", "Actual Positive"],
                              columns=["Predicted Negative", "Predicted Positive"])
-        cm_filename = os.path.join(results_dir, f"confusion_table_{model_name}.csv")
+        cm_filename = os.path.join(results_dir, f"confusion_table_{model_name}_{date_time_str}{'_smote' if smote else ''}.csv")
         cm_df.to_csv(cm_filename, index=True)
         print(f"Confusion matrix for {model_name} saved to {cm_filename}")
 
@@ -577,20 +579,19 @@ def save_evaluation_metrics(models, X_test, y_test, smote=0):
         plt.ylabel('True Positive Rate')
         plt.title(f'ROC Curve for {model_name}')
         plt.legend(loc="lower right")
-        roc_filename = os.path.join(results_dir, f"roc_curve_{model_name}.png")
+        roc_filename = os.path.join(results_dir, f"roc_curve_{model_name}_{date_time_str}{'_smote' if smote else ''}.png")
         plt.savefig(roc_filename)
         plt.close()
         print(f"ROC curve for {model_name} saved to {roc_filename}")
 
-    # --- Save Overall Results to a Timestamped CSV File ---
-    date_time_str = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    overall_filename = f"model_results_{date_time_str}{'_smote' if smote else ''}.csv"
-    overall_path = os.path.join(results_dir, overall_filename)
-    with open(overall_path, mode="w", newline="") as csvfile:
+    # --- Save results to CSV file ---
+    results_filename = f"models_results_{date_time_str}{'_smote' if smote else ''}.csv"
+    results_path = os.path.join(results_dir, results_filename)
+    with open(results_path, mode="w", newline="") as csvfile:
         writer = csv.DictWriter(csvfile, fieldnames=["Model", "Training Accuracy", "Testing Accuracy", "F1-Score", "Best Parameters"])
         writer.writeheader()
-        writer.writerows(overall_results)
-    print(f"Overall model results saved to {overall_filename}")
+        writer.writerows(results)
+    print(f"Overall model results saved to {results_filename}")
 
 
 def plot_and_save_feature_distribution(df):
@@ -635,7 +636,7 @@ if __name__ == "__main__":
     data_processor = DataProcessor(file_path)
 
     X, y = data_processor.load_data()
-    plot_and_save_feature_distribution(X)
+    # plot_and_save_feature_distribution(X)
     X_preprocessed_df = data_processor.preprocess(X)
     X_train, X_test, y_train, y_test = train_test_split(X_preprocessed_df, y, test_size=0.3, random_state=42)
 
