@@ -12,11 +12,12 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.svm import SVC
 from sklearn.naive_bayes import GaussianNB
 from sklearn.model_selection import train_test_split, GridSearchCV
-from sklearn.metrics import accuracy_score
+from sklearn.metrics import accuracy_score, f1_score, roc_curve, auc, confusion_matrix
 from ISLP import confusion_table
 from sklearn.preprocessing import OneHotEncoder, StandardScaler, FunctionTransformer, MinMaxScaler
 from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
+from imblearn.over_sampling import SMOTE
 
 # --------------------------------------------------
 # Data processor to load and preprocess the dataset
@@ -136,7 +137,7 @@ class DecisionTreeModel:
 
         return self.best_estimator_
 
-    def predict(self):
+    def make_prediction(self):
         if self.best_estimator_ is None:
             raise ValueError("Model not tuned. Call fine_tune() first.")
 
@@ -190,7 +191,7 @@ class RandomForestModel:
 
         return self.best_estimator_
 
-    def predict(self):
+    def make_prediction(self):
         if self.best_estimator_ is None:
             raise ValueError("Model not tuned. Call tune() first.")
 
@@ -254,7 +255,7 @@ class AdaBoostModel:
 
         return self.best_estimator_
 
-    def predict(self):
+    def make_prediction(self):
         if self.best_estimator_ is None:
             raise ValueError("Model not tuned. Call tune() first.")
 
@@ -319,7 +320,7 @@ class GradientBoostingModel:
 
         return self.best_estimator_
 
-    def predict(self):
+    def make_prediction(self):
         if self.best_estimator_ is None:
             raise ValueError("Model not tuned. Call tune() first.")
 
@@ -384,7 +385,7 @@ class LogisticRegressionModel:
 
         return self.best_estimator_
 
-    def predict(self):
+    def make_prediction(self):
         if self.best_estimator_ is None:
             raise ValueError("Model not tuned. Call tune() first.")
 
@@ -431,7 +432,7 @@ class kNNModel:
 
         return self.best_estimator_
 
-    def predict(self):
+    def make_prediction(self):
         if self.best_estimator_ is None:
             raise ValueError("Model not tuned. Call tune() first.")
 
@@ -480,7 +481,7 @@ class SVMModel:
 
         return self.best_estimator_
 
-    def predict(self):
+    def make_prediction(self):
         if self.best_estimator_ is None:
             raise ValueError("Model not tuned. Call tune() first.")
 
@@ -497,7 +498,7 @@ class SVMModel:
         confusion_table(y_test_pred, self.y_test)
 
         return train_accuracy, test_accuracy
-    
+
 
 # -----------------------
 # Gaussian Naive Bayes Model
@@ -509,8 +510,9 @@ class GaussianNBModel:
         self.X_test = X_test
         self.y_test = y_test
         self.model_description = ""
+        self.best_estimator_ = None
 
-    def predict(self):
+    def make_prediction(self):
         gnb = GaussianNB()
 
         gnb.fit(self.X_train, self.y_train)
@@ -525,53 +527,116 @@ class GaussianNBModel:
         test_accuracy = accuracy_score(self.y_test, y_test_pred)
         print("GaussianNB Testing Accuracy:", test_accuracy)
 
+        self.best_estimator_ = gnb
+
         confusion_table(y_test_pred, self.y_test)
 
         return train_accuracy, test_accuracy
 
 
-def save_results(models):
+def save_evaluation_metrics(models, X_test, y_test, smote=0):
     """
-    Saves the accuracy results and best hyperparameters for all models.
-
-    Parameters:
-    - models: A dictionary containing model names as keys and model instances as values.
-    """
-
-    results = []
+    Evaluates each model in the given dictionary and saves overall as well as detailed evaluation metrics.
     
+    For each model, this function:
+      - Calls the model's predict() method to obtain training and test accuracy.
+      - Retrieves the tuned (best) estimator's parameters.
+      - Computes the F1-score (rounded to three decimals) and saves it to a text file.
+      - Computes the confusion matrix and saves it as a CSV file.
+      - Computes the ROC curve and AUC, plots the ROC curve, and saves it as a PNG image.
+      - Collects overall performance metrics and saves them in a timestamped CSV file.
+    
+    Parameters:
+      models : dict
+          Dictionary with model names as keys and model instances as values.
+      X_test : array-like
+          Test set features.
+      y_test : array-like
+          Test set labels.
+      smote : int, optional (default=0)
+          Flag indicating whether SMOTE was applied (affects the output filename).
+    """
+
+    # Directory for saving detailed evaluation outputs
+    results_dir = "./results/model_performance/"
+    if not os.path.exists(results_dir):
+        os.makedirs(results_dir)
+
+    overall_results = []  # Will hold overall metrics for each model
+
+    # Loop over each model to perform evaluation and save outputs
     for model_name, model in models.items():
+        print(f"Evaluating {model_name}...")
+
+        # --- Overall Metrics: Training & Testing Accuracy, Best Parameters ---
+        try:
+            train_acc, test_acc = model.make_prediction()  # Assumes predict() prints info and returns accuracies
+        except Exception as e:
+            print(f"Error evaluating {model_name}: {e}")
+            train_acc, test_acc = "N/A", "N/A"
+
         if hasattr(model, "best_estimator_") and model.best_estimator_ is not None:
             best_params = model.best_estimator_.get_params()
+            y_test_pred = model.best_estimator_.predict(X_test)
         else:
-            best_params = "N/A"  # For models that don't have hyperparameter tuning
-        
-        try:
-            train_acc, test_acc = model.predict()
-            train_acc = round(train_acc, 3) if isinstance(train_acc, float) else train_acc
-            test_acc = round(test_acc, 3) if isinstance(test_acc, float) else test_acc
-        except ValueError:
-            train_acc, test_acc = "N/A", "N/A"  # If model tuning is required before prediction
+            best_params = "N/A"
+            y_test_pred = model.estimator_.predict(X_test)
 
-        results.append({
+        # Compute F1-score (binary classification; adjust pos_label or average if needed)
+        f1_val = f1_score(y_test, y_test_pred, pos_label=1)
+
+        overall_results.append({
             "Model": model_name,
-            "Training Accuracy": train_acc,
-            "Testing Accuracy": test_acc,
+            "Training Accuracy": round(train_acc, 3) if isinstance(train_acc, float) else train_acc,
+            "Testing Accuracy": round(test_acc, 3) if isinstance(test_acc, float) else test_acc,
+            "F1-Score": round(f1_val, 3) if isinstance(f1_val, float) else f1_val,
             "Best Parameters": best_params
         })
 
-    # Save results to a CSV file with timestamped filename
+        # Compute and save the confusion matrix as CSV
+        cm = confusion_matrix(y_test, y_test_pred)
+        cm_df = pd.DataFrame(cm, index=["Actual Negative", "Actual Positive"],
+                             columns=["Predicted Negative", "Predicted Positive"])
+        cm_filename = os.path.join(results_dir, f"confusion_table_{model_name}.csv")
+        cm_df.to_csv(cm_filename, index=True)
+        print(f"Confusion matrix for {model_name} saved to {cm_filename}")
+
+        # Compute ROC curve and AUC.
+        # Use predict_proba if available; otherwise, decision_function or fallback to predictions.
+        if hasattr(model.best_estimator_, "predict_proba"):
+            y_scores = model.best_estimator_.predict_proba(X_test)[:, 1]
+        elif hasattr(model.best_estimator_, "decision_function"):
+            y_scores = model.best_estimator_.decision_function(X_test)
+        else:
+            y_scores = model.best_estimator_.predict(X_test)
+
+        fpr, tpr, _ = roc_curve(y_test, y_scores)
+        roc_auc = auc(fpr, tpr)
+
+        # Plot ROC curve
+        plt.figure()
+        plt.plot(fpr, tpr, lw=2, label=f'ROC curve (AUC = {roc_auc:.3f})')
+        plt.plot([0, 1], [0, 1], lw=1, linestyle='--', color='gray')
+        plt.xlim([0.0, 1.0])
+        plt.ylim([0.0, 1.05])
+        plt.xlabel('False Positive Rate')
+        plt.ylabel('True Positive Rate')
+        plt.title(f'ROC Curve for {model_name}')
+        plt.legend(loc="lower right")
+        roc_filename = os.path.join(results_dir, f"roc_curve_{model_name}.png")
+        plt.savefig(roc_filename)
+        plt.close()
+        print(f"ROC curve for {model_name} saved to {roc_filename}")
+
+    # --- Save Overall Results to a Timestamped CSV File ---
     date_time_str = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    filename = f"model_results_{date_time_str}.csv"
-
-    save_dir = "./results/model_performance/" + filename
-
-    with open(save_dir, mode="w", newline="") as file:
-        writer = csv.DictWriter(file, fieldnames=["Model", "Training Accuracy", "Testing Accuracy", "Best Parameters"])
+    overall_filename = f"model_results_{date_time_str}{'_smote' if smote else ''}.csv"
+    overall_path = os.path.join(results_dir, overall_filename)
+    with open(overall_path, mode="w", newline="") as csvfile:
+        writer = csv.DictWriter(csvfile, fieldnames=["Model", "Training Accuracy", "Testing Accuracy", "F1-Score", "Best Parameters"])
         writer.writeheader()
-        writer.writerows(results)
-
-    print(f"Results saved to {filename}")
+        writer.writerows(overall_results)
+    print(f"Overall model results saved to {overall_filename}")
 
 
 def plot_and_save_feature_distribution(df):
@@ -611,6 +676,7 @@ def plot_and_save_feature_distribution(df):
 if __name__ == "__main__":
     # Data loading and preprocessing
     file_path = './datasets/heart-disease.csv'
+    smote = 0
 
     data_processor = DataProcessor(file_path)
 
@@ -619,47 +685,52 @@ if __name__ == "__main__":
     X_preprocessed_df = data_processor.preprocess(X)
     X_train, X_test, y_train, y_test = train_test_split(X_preprocessed_df, y, test_size=0.3, random_state=42)
 
+    if smote:
+        X_train, y_train = SMOTE().fit_resample(X_train, y_train)
+
+        print(y_train.value_counts())
+
     # Decision Tree
     dt_model = DecisionTreeModel(X_train, y_train, X_test, y_test)
     dt_model.fine_tune()
-    dt_model.predict()
+    dt_model.make_prediction()
 
     # Random Forest
     rf_model = RandomForestModel(X_train, y_train, X_test, y_test)
     rf_model.fine_tune()
-    rf_model.predict()
+    rf_model.make_prediction()
     # rf_model.plot_feature_importance()
 
     # AdaBoost
     ada_model = AdaBoostModel(X_train, y_train, X_test, y_test)
     ada_model.fine_tune()
-    ada_model.predict()
+    ada_model.make_prediction()
     # ada_model.plot_feature_importance()
 
     # Gradient Boosting
     gb_model = GradientBoostingModel(X_train, y_train, X_test, y_test)
     gb_model.fine_tune()
-    gb_model.predict()
+    gb_model.make_prediction()
     # gb_model.plot_feature_importance()
 
     # Logistic Regression
     lr_model = LogisticRegressionModel(X_train, y_train, X_test, y_test)
     lr_model.fine_tune()
-    lr_model.predict()
+    lr_model.make_prediction()
 
     # kNN
     kNN_model = kNNModel(X_train, y_train, X_test, y_test)
     kNN_model.fine_tune()
-    kNN_model.predict()
+    kNN_model.make_prediction()
 
     # SVM
     SVM_model = SVMModel(X_train, y_train, X_test, y_test)
     SVM_model.fine_tune()
-    SVM_model.predict()
+    SVM_model.make_prediction()
 
     # GNB
     GNB_model = GaussianNBModel(X_train, y_train, X_test, y_test)
-    GNB_model.predict()
+    GNB_model.make_prediction()
 
     # Dictionary to store models
     models = {
@@ -673,5 +744,5 @@ if __name__ == "__main__":
         "GaussianNB": GNB_model
     }
 
-    # Save results to CSV
-    save_results(models)
+    # Evaluate models and save detailed performance metrics
+    save_evaluation_metrics(models, X_test, y_test, smote)
