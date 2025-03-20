@@ -5,7 +5,6 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
-from matplotlib.pyplot import subplots
 from sklearn.tree import DecisionTreeClassifier, plot_tree
 from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier, GradientBoostingClassifier
 from sklearn.linear_model import LogisticRegression
@@ -47,14 +46,12 @@ class DataProcessor:
         self.X = self.df[feature_columns]
         self.y = self.df[target_columns]
 
-        # TODO: Make sure to address the class imbalance
-        print(self.X.dtypes)
-        print(self.X.head())
+        # Print the class distribution
         print(self.y.value_counts())
 
         return self.X, self.y
 
-    def preprocess(self, X, apply_pca=0, save_loadings=1):
+    def preprocess(self, X, apply_pca=0):
         # Identify categorical and numerical columns
         categorical_cols = X.select_dtypes(include=['object']).columns
         numerical_cols = X.select_dtypes(include=['int64', 'float64']).columns
@@ -102,29 +99,16 @@ class DataProcessor:
         X_preprocessed = preprocessor.transform(X)
 
         if apply_pca:
-            # Apply PCA: n_components can be a float (variance ratio) or integer (number of components)
+            # Apply PCA
             pca = PCA(n_components=0.95)
             X_pca = pca.fit_transform(X_preprocessed)
             print("Explained variance ratio:", pca.explained_variance_ratio_)
 
             # Convert PCA output to DataFrame with generic names: PC1, PC2, ...
             pc_names = [f"PC{i+1}" for i in range(X_pca.shape[1])]
-            X_pca_df = pd.DataFrame(X_pca, columns=pc_names, index=X.index)
+            X_preprocessed_pca_df = pd.DataFrame(X_pca, columns=pc_names, index=X.index)
 
-            # Optionally compute and save the correlation table (loadings)
-            if save_loadings:
-                # Calculate loadings: each original feature's contribution to each PC.
-                # Here, pca.components_ has shape (n_components, n_features).
-                # Multiply each component by the square root of its eigenvalue.
-                loadings = pca.components_.T * np.sqrt(pca.explained_variance_)
-                # Retrieve the original feature names from the preprocessor output
-                orig_features = preprocessor.get_feature_names_out()
-                loadings_df = pd.DataFrame(loadings, index=orig_features, columns=pc_names)
-                loadings_filename = "pca_loadings.csv"
-                loadings_df.to_csv(loadings_filename)
-                print(f"PCA loadings (correlation table) saved to {loadings_filename}")
-
-            return X_pca_df
+            return X_preprocessed_pca_df
         else:
             # Get the feature names after one-hot encoding
             feature_names = preprocessor.get_feature_names_out()
@@ -141,14 +125,15 @@ class DataProcessor:
 # -------------------
 class DecisionTreeModel:
     def __init__(self, X_train, y_train, X_test, y_test, random_state=67):
+        # Initialize training and testing data, and set random state for reproducibility
         self.X_train = X_train
         self.y_train = y_train
         self.X_test = X_test
         self.y_test = y_test
         self.random_state = random_state
         self.best_estimator_ = None
-        self.model_description = "Decision trees start with the entire dataset and recursively choose the best feature and corresponding threshold that minimises impurity, measured by the Gini Index. Each split divides the data into two subregions, making the best local decision at each step. This results in a tree structure with internal nodes where decisions are made, branches representing pathways from one decision to the next, and terminal nodes which provide the final predictions."
 
+    # Fine-tunes the decision tree using cross-validation to find the best hyperparameters
     def fine_tune(self, param_grid={"ccp_alpha": [1, 0.1, 0.01, 0.001, 0.0001]}, cv=20):
         grid = GridSearchCV(DecisionTreeClassifier(random_state=self.random_state),
                             param_grid, scoring='accuracy', cv=cv)
@@ -165,6 +150,7 @@ class DecisionTreeModel:
 
         return self.best_estimator_
 
+    # Make predictions using the trained decision tree and evaluates its performance
     def make_prediction(self):
         if self.best_estimator_ is None:
             raise ValueError("Model not tuned. Call fine_tune() first.")
@@ -179,6 +165,7 @@ class DecisionTreeModel:
         test_accuracy = accuracy_score(self.y_test, y_test_pred)
         print("Decision Tree Testing Accuracy:", test_accuracy)
 
+        # Plot the decision tree
         fig, ax = plt.subplots()
         plot_tree(self.best_estimator_, feature_names=self.X_train.columns, class_names=['0', '1'], filled=True, ax=ax)
         ax.set_title(f"Decision Tree")
@@ -200,8 +187,8 @@ class RandomForestModel:
         self.n_estimators = n_estimators
         self.random_state = random_state
         self.best_estimator_ = None
-        self.model_description = "Random forests sample multiple trees (i.e. a forest) using bootstrapped training data (i.e. random). Each tree produces an independent prediction, and the final output is determined by majority voting. To reduce correlation among trees, random forests introduce additional randomness: when splitting a node, each tree considers only a random subset of features (often m=sqrt(p)), where p is the number of features in the dataset (James et al. 2013)."
 
+    # Fine-tunes the random forest by selecting the best number of features for splitting
     def fine_tune(self, param_grid={"max_features": [5, 10, 20, 30, 40, 50, "sqrt"]}, cv=10):
         grid = GridSearchCV(RandomForestClassifier(n_estimators=self.n_estimators, bootstrap=True,
                                                      oob_score=True, random_state=self.random_state),
@@ -219,6 +206,7 @@ class RandomForestModel:
 
         return self.best_estimator_
 
+    # Make predictions using the trained random forest and evaluates its performance
     def make_prediction(self):
         if self.best_estimator_ is None:
             raise ValueError("Model not tuned. Call tune() first.")
@@ -250,8 +238,8 @@ class AdaBoostModel:
         self.n_estimators = n_estimators
         self.random_state = random_state
         self.best_estimator_ = None
-        self.model_description = "AdaBoost constructs a strong learner by combining multiple weak learners. It adjusts the sample weights based on each weak learner’s performance, giving more focus to misclassified samples in subsequent iterations. Additionally, it assigns weights to weak learners according to their performance and ultimately combines them into a more powerful classifier."
 
+    # Fine-tunes the AdaBoost model by adjusting the learning rate
     def fine_tune(self, param_grid={"learning_rate": [0.001, 0.01, 0.1, 1]}, cv=10):
         base_estimator = DecisionTreeClassifier(max_depth=3)
         ada = AdaBoostClassifier(estimator=base_estimator, n_estimators=self.n_estimators, random_state=self.random_state, algorithm='SAMME')
@@ -268,6 +256,7 @@ class AdaBoostModel:
 
         return self.best_estimator_
 
+    # Make predictions using the trained AdaBoost model and evaluates its performance
     def make_prediction(self):
         if self.best_estimator_ is None:
             raise ValueError("Model not tuned. Call tune() first.")
@@ -299,8 +288,8 @@ class GradientBoostingModel:
         self.max_depth = max_depth
         self.random_state = random_state
         self.best_estimator_ = None
-        self.model_description = "Gradient Boosting focuses on iteratively correcting the errors of the previous model. It calculates the residuals of the current model, trains a new model to predict these residuals, and then adds the new model’s predictions to the current model, gradually improving overall predictive performance."
 
+    # Fine-tunes the gradient boosting model by selecting the best learning rate
     def fine_tune(self, param_grid={"learning_rate": [0.001, 0.01, 0.1, 1]}, cv=10):
         gb = GradientBoostingClassifier(max_depth=self.max_depth, n_estimators=self.n_estimators,
                                         random_state=self.random_state)
@@ -317,6 +306,7 @@ class GradientBoostingModel:
 
         return self.best_estimator_
 
+    # Make predictions using the trained gradient boosting model and evaluates its performance
     def make_prediction(self):
         if self.best_estimator_ is None:
             raise ValueError("Model not tuned. Call tune() first.")
@@ -350,8 +340,8 @@ class LogisticRegressionModel:
         self.max_iter = max_iter
         self.random_state = random_state
         self.best_estimator_ = None
-        self.model_description = ""
 
+    # Fine-tunes logistic regression by selecting the optimal regularization parameter
     def fine_tune(self, param_grid={"C": np.logspace(-5, 1, 300)}, cv=20):
         lr = LogisticRegression(penalty=self.penalty, max_iter=self.max_iter, random_state=self.random_state)
         grid = GridSearchCV(lr, param_grid, scoring='accuracy', cv=cv)
@@ -367,6 +357,7 @@ class LogisticRegressionModel:
 
         return self.best_estimator_
 
+    # Make predictions using the trained logistic regression model and evaluates its performance
     def make_prediction(self):
         if self.best_estimator_ is None:
             raise ValueError("Model not tuned. Call tune() first.")
@@ -397,8 +388,8 @@ class kNNModel:
         self.y_test = y_test
         self.n_neighbors = n_neighbors
         self.best_estimator_ = None
-        self.model_description = ""
 
+    # Fine-tunes kNN by selecting the optimal number of neighbours
     def fine_tune(self, param_grid={"n_neighbors": np.arange(1, 21)}, cv=20):
         knn = KNeighborsClassifier()
         grid = GridSearchCV(knn, param_grid, scoring='roc_auc', cv=cv)
@@ -414,6 +405,7 @@ class kNNModel:
 
         return self.best_estimator_
 
+    # Make predictions using the trained kNN model and evaluates its performance
     def make_prediction(self):
         if self.best_estimator_ is None:
             raise ValueError("Model not tuned. Call tune() first.")
@@ -446,8 +438,8 @@ class SVMModel:
         self.C = C
         self.gamma = gamma
         self.best_estimator_ = None
-        self.model_description = ""
 
+    # Fine-tunes the SVM by selecting the best kernel, regularization parameter, and gamma
     def fine_tune(self, param_grid={"kernel": ["rbf", "linear"], "gamma": [1,1e-1,1e-2,1e-3, 1e-4], "C": [1, 10, 100,1000]}, cv=10):
         svc = SVC()
         grid = GridSearchCV(svc, param_grid, scoring='accuracy', cv=cv)
@@ -463,6 +455,7 @@ class SVMModel:
 
         return self.best_estimator_
 
+    # Make predictions using the trained SVM model and evaluates its performance
     def make_prediction(self):
         if self.best_estimator_ is None:
             raise ValueError("Model not tuned. Call tune() first.")
@@ -491,9 +484,9 @@ class GaussianNBModel:
         self.y_train = y_train
         self.X_test = X_test
         self.y_test = y_test
-        self.model_description = ""
         self.best_estimator_ = None
 
+    # Train and make predictions using the Gaussian Naive Bayes model, then evaluate performance
     def make_prediction(self):
         gnb = GaussianNB()
 
@@ -509,6 +502,7 @@ class GaussianNBModel:
         test_accuracy = accuracy_score(self.y_test, y_test_pred)
         print("GaussianNB Testing Accuracy:", test_accuracy)
 
+        # Save model as a class attribute
         self.best_estimator_ = gnb
 
         confusion_table(y_test_pred, self.y_test)
@@ -525,9 +519,9 @@ class LDAModel:
         self.y_train = y_train
         self.X_test = X_test
         self.y_test = y_test
-        self.model_description = ""
         self.best_estimator_ = None
 
+    # Train and make predictions using the LDA model, then evaluate performance
     def make_prediction(self):
         lda = LinearDiscriminantAnalysis()
 
@@ -536,13 +530,14 @@ class LDAModel:
         # Predict on the training set
         y_train_pred = lda.predict(self.X_train)
         train_accuracy = accuracy_score(self.y_train, y_train_pred)
-        print("GaussianNB Training Accuracy:", train_accuracy)
+        print("LDA Training Accuracy:", train_accuracy)
 
         # Predict on the test set
         y_test_pred = lda.predict(self.X_test)
         test_accuracy = accuracy_score(self.y_test, y_test_pred)
-        print("GaussianNB Testing Accuracy:", test_accuracy)
+        print("LDA Testing Accuracy:", test_accuracy)
 
+        # Save model as a class attribute
         self.best_estimator_ = lda
 
         confusion_table(y_test_pred, self.y_test)
@@ -559,9 +554,9 @@ class QDAModel:
         self.y_train = y_train
         self.X_test = X_test
         self.y_test = y_test
-        self.model_description = ""
         self.best_estimator_ = None
 
+    # Train and make predictions using the QDA model, then evaluate performance
     def make_prediction(self):
         qda = QuadraticDiscriminantAnalysis()
 
@@ -570,13 +565,14 @@ class QDAModel:
         # Predict on the training set
         y_train_pred = qda.predict(self.X_train)
         train_accuracy = accuracy_score(self.y_train, y_train_pred)
-        print("GaussianNB Training Accuracy:", train_accuracy)
+        print("QDA Training Accuracy:", train_accuracy)
 
         # Predict on the test set
         y_test_pred = qda.predict(self.X_test)
         test_accuracy = accuracy_score(self.y_test, y_test_pred)
-        print("GaussianNB Testing Accuracy:", test_accuracy)
+        print("QDA Testing Accuracy:", test_accuracy)
 
+        # Save model as a class attribute
         self.best_estimator_ = qda
 
         confusion_table(y_test_pred, self.y_test)
@@ -586,60 +582,78 @@ class QDAModel:
 
 def save_evaluation_metrics(models, X_test, y_test, smote=0, pca=0):
     """
-    Evaluates each model in the given dictionary and saves overall as well as detailed evaluation metrics.
+    Evaluates each model in the provided dictionary and saves detailed evaluation metrics.
     
     For each model, this function:
-        - Calls the model's predict() method to obtain training and test accuracy.
-        - Retrieves the tuned (best) estimator's parameters.
-        - Computes the F1-score (rounded to three decimals) and saves it to a text file.
-        - Computes the confusion matrix and saves it as a CSV file.
-        - Computes the ROC curve and AUC, plots the ROC curve, and saves it as a PNG image.
-        - Collects overall performance metrics and saves them in a timestamped CSV file.
+      - Calls the model's make_prediction() method to obtain training and test accuracy.
+      - Retrieves the tuned estimator's parameters (if available) or falls back to an alternative estimator.
+      - Computes the F1-score (rounded to three decimals) for the positive class (assumed to be labeled as 1).
+      - Computes and saves the confusion matrix as a CSV file.
+      - Computes the ROC curve and AUC, plots the ROC curve, and saves it as a PNG image.
+      - Collects performance metrics and saves them in a timestamped CSV file.
     
     Parameters:
-        models : dict
-            Dictionary with model names as keys and model instances as values.
-        X_test : array-like
-            Test set features.
-        y_test : array-like
-            Test set labels.
-        smote : int, optional (default=0)
-            Flag indicating whether SMOTE was applied (affects the output filename).
-        pca : int, optional (default=0)
-            Flag indicating whether PCA was applied (affects output filenames).
+      models : dict
+          Dictionary with model names as keys and model instances as values.
+      X_test : array-like
+          Test set features.
+      y_test : array-like
+          Test set labels.
+      smote : bool, optional (default=False)
+          Flag indicating whether SMOTE was applied (affects the output filename).
+      pca : bool, optional (default=False)
+          Flag indicating whether PCA was applied (affects output filenames).
+    
+    Returns:
+      None
     """
 
+    # Get current timestamp for unique file naming
     date_time_str = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
-    # Directory for saving detailed evaluation outputs
-    results_dir = "./results/model_performance/"
+    # Determine results directory based on preprocessing techniques applied
+    if smote and not pca:
+        results_dir = "./results/model_performance/smote/"
+    elif pca and not smote:
+        results_dir = "./results/model_performance/pca/"
+    elif smote and pca:
+        results_dir = "./results/model_performance/smote_pca/"
+    else:
+        results_dir = "./results/model_performance/"
+
+    # Create the results directory if it does not exist
     if not os.path.exists(results_dir):
         os.makedirs(results_dir)
 
+    # List to store performance metrics for each model
     results = []
-    all_roc_data = {}  # To store ROC curve data for each model for the combined plot.
+    # Dictionary to store ROC curve data for combined plot
+    all_roc_data = {}
 
-    # Loop over each model to perform evaluation and save outputs
+    # Loop over each model to evaluate and save performance metrics
     for model_name, model in models.items():
         print(f"Evaluating {model_name}...")
 
-        # --- Metrics: Training & Testing Accuracy, F-1 Score, Best Parameters ---
+        # Evaluate model performance using its make_prediction method
         try:
             train_acc, test_acc = model.make_prediction()
         except Exception as e:
             print(f"Error evaluating {model_name}: {e}")
             train_acc, test_acc = "N/A", "N/A"
 
+        # Retrieve the best estimator and predict on X_test
         if hasattr(model, "best_estimator_") and model.best_estimator_ is not None:
             best_params = model.best_estimator_.get_params()
             y_test_pred = model.best_estimator_.predict(X_test)
         else:
             best_params = "N/A"
+            # Fallback: attempt to use 'estimator_' if available
             y_test_pred = model.estimator_.predict(X_test)
 
-        # Compute F1-score
+        # Compute F1-score for the positive class (assumed label=1)
         f1_val = f1_score(y_test, y_test_pred, pos_label=1)
 
+        # Append model evaluation results to the list
         results.append({
             "Model": model_name,
             "Training Accuracy": round(train_acc, 3) if isinstance(train_acc, float) else train_acc,
@@ -709,7 +723,7 @@ def save_evaluation_metrics(models, X_test, y_test, smote=0, pca=0):
         writer = csv.DictWriter(csvfile, fieldnames=["Model", "Training Accuracy", "Testing Accuracy", "F1-Score", "Best Parameters"])
         writer.writeheader()
         writer.writerows(results)
-    print(f"Overall model results saved to {results_filename}")
+    print(f"Model results saved to {results_filename}")
 
 
 def plot_and_save_feature_distribution(df):
@@ -747,18 +761,36 @@ def plot_and_save_feature_distribution(df):
 
 
 if __name__ == "__main__":
-    # Data loading and preprocessing
+    # Get current timestamp for unique file naming
+    date_time_str = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    # Set file path for the dataset and flags for applying SMOTE and PCA.
     file_path = './datasets/heart-disease.csv'
+    # Set to 1 if SMOTE oversampling should be applied to balance the classes.
     smote = 0
+    # Set to 1 if PCA dimensionality reduction should be applied to the features.
     pca = 0
 
+    # Instantiate DataProcessor with the provided file path.
     data_processor = DataProcessor(file_path)
 
+    # Load data from CSV file into DataFrame and split into features (X) and target (y).
     X, y = data_processor.load_data()
-    # plot_and_save_feature_distribution(X)
-    X_preprocessed_df = data_processor.preprocess(X, pca, 1)
 
+    # Optionally, plot and save feature distributions for exploratory analysis.
+    # plot_and_save_feature_distribution(X)
+
+    # Preprocess the features. If PCA is enabled, the function applies PCA and returns reduced dimensions.
+    X_preprocessed_df = data_processor.preprocess(X, pca)
+
+    # If PCA is not applied, compute and visualize the correlation matrix of the preprocessed features.
     if not pca:
+        # Determine results directory based on preprocessing techniques applied
+        if smote:
+            results_dir = "./results/model_performance/smote/"
+        else:
+            results_dir = "./results/model_performance/"
+
+        # Calculate the correlation matrix and round values for better readability.
         correlation_table = X_preprocessed_df.corr().round(2)
 
         # Create a heatmap of the correlation matrix
@@ -767,67 +799,74 @@ if __name__ == "__main__":
         plt.title("Feature Correlations")
         plt.tight_layout()
 
-        # Save the figure with high resolution
-        plt.savefig("./results/correlation_table.png", dpi=300)
+        # Save the heatmap as a high-resolution PNG image.
+        plt.savefig(results_dir + "correlation_table.png", dpi=300)
         plt.close()
 
-        correlation_table.to_csv("./results/correlation_table.csv")
+        # Save the correlation table as a CSV file for further analysis.
+        correlation_table.to_csv(results_dir + "correlation_table.csv")
 
+    # Split the preprocessed data into training and testing sets (70% training, 30% testing) using a fixed random state for reproducibility.
     X_train, X_test, y_train, y_test = train_test_split(X_preprocessed_df, y, test_size=0.3, random_state=42)
 
+    # If SMOTE oversampling is enabled, apply it to the training set to balance class distribution.
     if smote:
         X_train, y_train = SMOTE().fit_resample(X_train, y_train)
-
+        # Print the class distribution after applying SMOTE to verify the balancing effect.
         print(y_train.value_counts())
 
-    # Decision Tree
+    # -----------------------
+    # Initialize and evaluate various machine learning models
+    # -----------------------
+
+    # Decision Tree Model
     dt_model = DecisionTreeModel(X_train, y_train, X_test, y_test)
     dt_model.fine_tune()
     dt_model.make_prediction()
 
-    # Random Forest
+    # Random Forest Model
     rf_model = RandomForestModel(X_train, y_train, X_test, y_test)
     rf_model.fine_tune()
     rf_model.make_prediction()
 
-    # AdaBoost
+    # AdaBoost Model
     ada_model = AdaBoostModel(X_train, y_train, X_test, y_test)
     ada_model.fine_tune()
     ada_model.make_prediction()
 
-    # Gradient Boosting
+    # Gradient Boosting Model
     gb_model = GradientBoostingModel(X_train, y_train, X_test, y_test)
     gb_model.fine_tune()
     gb_model.make_prediction()
 
-    # Logistic Regression
+    # Logistic Regression Model
     lr_model = LogisticRegressionModel(X_train, y_train, X_test, y_test)
     lr_model.fine_tune()
     lr_model.make_prediction()
 
-    # kNN
+    # kNN Model
     kNN_model = kNNModel(X_train, y_train, X_test, y_test)
     kNN_model.fine_tune()
     kNN_model.make_prediction()
 
-    # SVM
+    # Support Vector Machine (SVM) Model
     SVM_model = SVMModel(X_train, y_train, X_test, y_test)
     SVM_model.fine_tune()
     SVM_model.make_prediction()
 
-    # GNB
+    # Gaussian Naive Bayes Model
     GNB_model = GaussianNBModel(X_train, y_train, X_test, y_test)
     GNB_model.make_prediction()
 
-    # LDA
+    # Linear Discriminant Analysis (LDA) Model
     LDA_model = LDAModel(X_train, y_train, X_test, y_test)
     LDA_model.make_prediction()
 
-    # GNB
+    # Quadratic Discriminant Analysis (QDA) Model
     QDA_model = QDAModel(X_train, y_train, X_test, y_test)
     QDA_model.make_prediction()
 
-    # Dictionary to store models
+    # Create a dictionary to store all the models for evaluation.
     models = {
         "Decision Tree": dt_model,
         "Random Forest": rf_model,
