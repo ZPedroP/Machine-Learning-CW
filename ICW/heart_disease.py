@@ -4,6 +4,7 @@ from datetime import datetime
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+import seaborn as sns
 from matplotlib.pyplot import subplots
 from sklearn.tree import DecisionTreeClassifier, plot_tree
 from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier, GradientBoostingClassifier
@@ -53,7 +54,7 @@ class DataProcessor:
 
         return self.X, self.y
 
-    def preprocess(self, X, apply_pca=0, save_loadings=0):
+    def preprocess(self, X, apply_pca=0, save_loadings=1):
         # Identify categorical and numerical columns
         categorical_cols = X.select_dtypes(include=['object']).columns
         numerical_cols = X.select_dtypes(include=['int64', 'float64']).columns
@@ -616,6 +617,7 @@ def save_evaluation_metrics(models, X_test, y_test, smote=0, pca=0):
         os.makedirs(results_dir)
 
     results = []
+    all_roc_data = {}  # To store ROC curve data for each model for the combined plot.
 
     # Loop over each model to perform evaluation and save outputs
     for model_name, model in models.items():
@@ -666,6 +668,9 @@ def save_evaluation_metrics(models, X_test, y_test, smote=0, pca=0):
         fpr, tpr, _ = roc_curve(y_test, y_scores)
         roc_auc = auc(fpr, tpr)
 
+        # Store ROC data for the combined plot
+        all_roc_data[model_name] = (fpr, tpr, roc_auc)
+
         # Plot ROC curve
         plt.figure()
         plt.plot(fpr, tpr, lw=2, label=f'ROC curve (AUC = {roc_auc:.3f})')
@@ -675,11 +680,27 @@ def save_evaluation_metrics(models, X_test, y_test, smote=0, pca=0):
         plt.xlabel('False Positive Rate')
         plt.ylabel('True Positive Rate')
         plt.title(f'ROC Curve for {model_name}')
-        plt.legend(loc="lower right")
+        plt.legend(loc="lower right", fontsize=6)
         roc_filename = os.path.join(results_dir, f"roc_curve_{model_name}_{date_time_str}{'_smote' if smote else ''}{'_pca' if pca else ''}.png")
-        plt.savefig(roc_filename)
+        plt.savefig(roc_filename, dpi=300)
         plt.close()
         print(f"ROC curve for {model_name} saved to {roc_filename}")
+
+    # --- Combined ROC Plot for All Models ---
+    plt.figure()
+    for model_name, (fpr, tpr, roc_auc) in all_roc_data.items():
+        plt.plot(fpr, tpr, lw=2, label=f'{model_name} (AUC = {roc_auc:.3f})')
+    plt.plot([0, 1], [0, 1], lw=1, linestyle='--', color='gray')  # Diagonal line for random performance
+    plt.xlim([0.0, 1.0])
+    plt.ylim([0.0, 1.05])
+    plt.xlabel('False Positive Rate')
+    plt.ylabel('True Positive Rate')
+    plt.title('Combined ROC Curves for All Models')
+    plt.legend(loc="lower right", fontsize=6)
+    combined_roc_filename = os.path.join(results_dir, f"combined_roc_curves_{date_time_str}"f"{'_smote' if smote else ''}{'_pca' if pca else ''}.png")
+    plt.savefig(combined_roc_filename, dpi=300)
+    plt.close()
+    print(f"Combined ROC curve for all models saved to {combined_roc_filename}")
 
     # --- Save results to CSV file ---
     results_filename = f"models_results_{date_time_str}{'_smote' if smote else ''}{'_pca' if pca else ''}.csv"
@@ -719,7 +740,7 @@ def plot_and_save_feature_distribution(df):
         
         # Save plot
         plot_filename = os.path.join(save_dir, f"{column}_distribution.png")
-        plt.savefig(plot_filename)
+        plt.savefig(plot_filename, dpi=300)
         plt.close()
 
     print(f"Feature distribution plots saved in '{save_dir}'")
@@ -735,7 +756,23 @@ if __name__ == "__main__":
 
     X, y = data_processor.load_data()
     # plot_and_save_feature_distribution(X)
-    X_preprocessed_df = data_processor.preprocess(X)
+    X_preprocessed_df = data_processor.preprocess(X, pca, 1)
+
+    if not pca:
+        correlation_table = X_preprocessed_df.corr().round(2)
+
+        # Create a heatmap of the correlation matrix
+        plt.figure(figsize=(12, 10))
+        sns.heatmap(correlation_table, annot=True, cmap="coolwarm", vmin=-1, vmax=1)
+        plt.title("Feature Correlations")
+        plt.tight_layout()
+
+        # Save the figure with high resolution
+        plt.savefig("./results/correlation_table.png", dpi=300)
+        plt.close()
+
+        correlation_table.to_csv("./results/correlation_table.csv")
+
     X_train, X_test, y_train, y_test = train_test_split(X_preprocessed_df, y, test_size=0.3, random_state=42)
 
     if smote:
@@ -805,4 +842,4 @@ if __name__ == "__main__":
     }
 
     # Evaluate models and save detailed performance metrics
-    save_evaluation_metrics(models, X_test, y_test, smote)
+    save_evaluation_metrics(models, X_test, y_test, smote, pca)
