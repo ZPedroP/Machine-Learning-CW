@@ -11,12 +11,14 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.svm import SVC
 from sklearn.naive_bayes import GaussianNB
+from sklearn.discriminant_analysis import LinearDiscriminantAnalysis, QuadraticDiscriminantAnalysis
 from sklearn.model_selection import train_test_split, GridSearchCV
 from sklearn.metrics import accuracy_score, f1_score, roc_curve, auc, confusion_matrix
 from ISLP import confusion_table
 from sklearn.preprocessing import OneHotEncoder, StandardScaler, FunctionTransformer, MinMaxScaler
 from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
+from sklearn.decomposition import PCA
 from imblearn.over_sampling import SMOTE
 
 # --------------------------------------------------
@@ -51,7 +53,7 @@ class DataProcessor:
 
         return self.X, self.y
 
-    def preprocess(self, X):
+    def preprocess(self, X, apply_pca=0, save_loadings=0):
         # Identify categorical and numerical columns
         categorical_cols = X.select_dtypes(include=['object']).columns
         numerical_cols = X.select_dtypes(include=['int64', 'float64']).columns
@@ -98,14 +100,39 @@ class DataProcessor:
         # Transform the data
         X_preprocessed = preprocessor.transform(X)
 
-        # Get the feature names after one-hot encoding
-        feature_names = preprocessor.get_feature_names_out()
+        if apply_pca:
+            # Apply PCA: n_components can be a float (variance ratio) or integer (number of components)
+            pca = PCA(n_components=0.95)
+            X_pca = pca.fit_transform(X_preprocessed)
+            print("Explained variance ratio:", pca.explained_variance_ratio_)
 
-        print(feature_names)
-        # Convert the transformed data back to DataFrames
-        X_preprocessed_df = pd.DataFrame(X_preprocessed, columns=feature_names, index=X.index)
+            # Convert PCA output to DataFrame with generic names: PC1, PC2, ...
+            pc_names = [f"PC{i+1}" for i in range(X_pca.shape[1])]
+            X_pca_df = pd.DataFrame(X_pca, columns=pc_names, index=X.index)
 
-        return X_preprocessed_df
+            # Optionally compute and save the correlation table (loadings)
+            if save_loadings:
+                # Calculate loadings: each original feature's contribution to each PC.
+                # Here, pca.components_ has shape (n_components, n_features).
+                # Multiply each component by the square root of its eigenvalue.
+                loadings = pca.components_.T * np.sqrt(pca.explained_variance_)
+                # Retrieve the original feature names from the preprocessor output
+                orig_features = preprocessor.get_feature_names_out()
+                loadings_df = pd.DataFrame(loadings, index=orig_features, columns=pc_names)
+                loadings_filename = "pca_loadings.csv"
+                loadings_df.to_csv(loadings_filename)
+                print(f"PCA loadings (correlation table) saved to {loadings_filename}")
+
+            return X_pca_df
+        else:
+            # Get the feature names after one-hot encoding
+            feature_names = preprocessor.get_feature_names_out()
+
+            print(feature_names)
+            # Convert the transformed data back to DataFrames
+            X_preprocessed_df = pd.DataFrame(X_preprocessed, columns=feature_names, index=X.index)
+
+            return X_preprocessed_df
 
 
 # -------------------
@@ -226,7 +253,7 @@ class AdaBoostModel:
 
     def fine_tune(self, param_grid={"learning_rate": [0.001, 0.01, 0.1, 1]}, cv=10):
         base_estimator = DecisionTreeClassifier(max_depth=3)
-        ada = AdaBoostClassifier(estimator=base_estimator, n_estimators=self.n_estimators, random_state=self.random_state)
+        ada = AdaBoostClassifier(estimator=base_estimator, n_estimators=self.n_estimators, random_state=self.random_state, algorithm='SAMME')
         grid = GridSearchCV(ada, param_grid, scoring='accuracy', cv=cv)
 
         grid.fit(self.X_train, self.y_train)
@@ -488,27 +515,97 @@ class GaussianNBModel:
         return train_accuracy, test_accuracy
 
 
-def save_evaluation_metrics(models, X_test, y_test, smote=0):
+# -----------------------
+# LDA Model
+# -----------------------
+class LDAModel:
+    def __init__(self, X_train, y_train, X_test, y_test):
+        self.X_train = X_train
+        self.y_train = y_train
+        self.X_test = X_test
+        self.y_test = y_test
+        self.model_description = ""
+        self.best_estimator_ = None
+
+    def make_prediction(self):
+        lda = LinearDiscriminantAnalysis()
+
+        lda.fit(self.X_train, self.y_train)
+
+        # Predict on the training set
+        y_train_pred = lda.predict(self.X_train)
+        train_accuracy = accuracy_score(self.y_train, y_train_pred)
+        print("GaussianNB Training Accuracy:", train_accuracy)
+
+        # Predict on the test set
+        y_test_pred = lda.predict(self.X_test)
+        test_accuracy = accuracy_score(self.y_test, y_test_pred)
+        print("GaussianNB Testing Accuracy:", test_accuracy)
+
+        self.best_estimator_ = lda
+
+        confusion_table(y_test_pred, self.y_test)
+
+        return train_accuracy, test_accuracy
+
+
+# -----------------------
+# QDA Model
+# -----------------------
+class QDAModel:
+    def __init__(self, X_train, y_train, X_test, y_test):
+        self.X_train = X_train
+        self.y_train = y_train
+        self.X_test = X_test
+        self.y_test = y_test
+        self.model_description = ""
+        self.best_estimator_ = None
+
+    def make_prediction(self):
+        qda = QuadraticDiscriminantAnalysis()
+
+        qda.fit(self.X_train, self.y_train)
+
+        # Predict on the training set
+        y_train_pred = qda.predict(self.X_train)
+        train_accuracy = accuracy_score(self.y_train, y_train_pred)
+        print("GaussianNB Training Accuracy:", train_accuracy)
+
+        # Predict on the test set
+        y_test_pred = qda.predict(self.X_test)
+        test_accuracy = accuracy_score(self.y_test, y_test_pred)
+        print("GaussianNB Testing Accuracy:", test_accuracy)
+
+        self.best_estimator_ = qda
+
+        confusion_table(y_test_pred, self.y_test)
+
+        return train_accuracy, test_accuracy
+
+
+def save_evaluation_metrics(models, X_test, y_test, smote=0, pca=0):
     """
     Evaluates each model in the given dictionary and saves overall as well as detailed evaluation metrics.
     
     For each model, this function:
-      - Calls the model's predict() method to obtain training and test accuracy.
-      - Retrieves the tuned (best) estimator's parameters.
-      - Computes the F1-score (rounded to three decimals) and saves it to a text file.
-      - Computes the confusion matrix and saves it as a CSV file.
-      - Computes the ROC curve and AUC, plots the ROC curve, and saves it as a PNG image.
-      - Collects overall performance metrics and saves them in a timestamped CSV file.
+        - Calls the model's predict() method to obtain training and test accuracy.
+        - Retrieves the tuned (best) estimator's parameters.
+        - Computes the F1-score (rounded to three decimals) and saves it to a text file.
+        - Computes the confusion matrix and saves it as a CSV file.
+        - Computes the ROC curve and AUC, plots the ROC curve, and saves it as a PNG image.
+        - Collects overall performance metrics and saves them in a timestamped CSV file.
     
     Parameters:
-      models : dict
-          Dictionary with model names as keys and model instances as values.
-      X_test : array-like
-          Test set features.
-      y_test : array-like
-          Test set labels.
-      smote : int, optional (default=0)
-          Flag indicating whether SMOTE was applied (affects the output filename).
+        models : dict
+            Dictionary with model names as keys and model instances as values.
+        X_test : array-like
+            Test set features.
+        y_test : array-like
+            Test set labels.
+        smote : int, optional (default=0)
+            Flag indicating whether SMOTE was applied (affects the output filename).
+        pca : int, optional (default=0)
+            Flag indicating whether PCA was applied (affects output filenames).
     """
 
     date_time_str = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
@@ -553,7 +650,7 @@ def save_evaluation_metrics(models, X_test, y_test, smote=0):
         cm = confusion_matrix(y_test, y_test_pred)
         cm_df = pd.DataFrame(cm, index=["Actual Negative", "Actual Positive"],
                              columns=["Predicted Negative", "Predicted Positive"])
-        cm_filename = os.path.join(results_dir, f"confusion_table_{model_name}_{date_time_str}{'_smote' if smote else ''}.csv")
+        cm_filename = os.path.join(results_dir, f"confusion_table_{model_name}_{date_time_str}{'_smote' if smote else ''}{'_pca' if pca else ''}.csv")
         cm_df.to_csv(cm_filename, index=True)
         print(f"Confusion matrix for {model_name} saved to {cm_filename}")
 
@@ -579,13 +676,13 @@ def save_evaluation_metrics(models, X_test, y_test, smote=0):
         plt.ylabel('True Positive Rate')
         plt.title(f'ROC Curve for {model_name}')
         plt.legend(loc="lower right")
-        roc_filename = os.path.join(results_dir, f"roc_curve_{model_name}_{date_time_str}{'_smote' if smote else ''}.png")
+        roc_filename = os.path.join(results_dir, f"roc_curve_{model_name}_{date_time_str}{'_smote' if smote else ''}{'_pca' if pca else ''}.png")
         plt.savefig(roc_filename)
         plt.close()
         print(f"ROC curve for {model_name} saved to {roc_filename}")
 
     # --- Save results to CSV file ---
-    results_filename = f"models_results_{date_time_str}{'_smote' if smote else ''}.csv"
+    results_filename = f"models_results_{date_time_str}{'_smote' if smote else ''}{'_pca' if pca else ''}.csv"
     results_path = os.path.join(results_dir, results_filename)
     with open(results_path, mode="w", newline="") as csvfile:
         writer = csv.DictWriter(csvfile, fieldnames=["Model", "Training Accuracy", "Testing Accuracy", "F1-Score", "Best Parameters"])
@@ -632,6 +729,7 @@ if __name__ == "__main__":
     # Data loading and preprocessing
     file_path = './datasets/heart-disease.csv'
     smote = 0
+    pca = 0
 
     data_processor = DataProcessor(file_path)
 
@@ -684,6 +782,14 @@ if __name__ == "__main__":
     GNB_model = GaussianNBModel(X_train, y_train, X_test, y_test)
     GNB_model.make_prediction()
 
+    # LDA
+    LDA_model = LDAModel(X_train, y_train, X_test, y_test)
+    LDA_model.make_prediction()
+
+    # GNB
+    QDA_model = QDAModel(X_train, y_train, X_test, y_test)
+    QDA_model.make_prediction()
+
     # Dictionary to store models
     models = {
         "Decision Tree": dt_model,
@@ -693,7 +799,9 @@ if __name__ == "__main__":
         "Logistic Regression": lr_model,
         "kNN": kNN_model,
         "SVM": SVM_model,
-        "GaussianNB": GNB_model
+        "GaussianNB": GNB_model,
+        "LDA": LDA_model,
+        "QDA": QDA_model
     }
 
     # Evaluate models and save detailed performance metrics
