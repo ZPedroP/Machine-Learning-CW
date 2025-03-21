@@ -694,9 +694,9 @@ def save_evaluation_metrics(models, X_test, y_test, smote=0, pca=0):
         plt.xlabel('False Positive Rate')
         plt.ylabel('True Positive Rate')
         plt.title(f'ROC Curve for {model_name}')
-        plt.legend(loc="lower right", fontsize=6)
+        plt.legend(loc="lower right", fontsize=8)
         roc_filename = os.path.join(results_dir, f"roc_curve_{model_name}_{date_time_str}{'_smote' if smote else ''}{'_pca' if pca else ''}.png")
-        plt.savefig(roc_filename, dpi=300)
+        plt.savefig(roc_filename, dpi=300, bbox_inches="tight")
         plt.close()
         print(f"ROC curve for {model_name} saved to {roc_filename}")
 
@@ -709,10 +709,10 @@ def save_evaluation_metrics(models, X_test, y_test, smote=0, pca=0):
     plt.ylim([0.0, 1.05])
     plt.xlabel('False Positive Rate')
     plt.ylabel('True Positive Rate')
-    plt.title('Combined ROC Curves for All Models')
-    plt.legend(loc="lower right", fontsize=6)
+    plt.title('ROC Curves Comparison for Multiple Classifiers')
+    plt.legend(loc="lower right", fontsize=8)
     combined_roc_filename = os.path.join(results_dir, f"combined_roc_curves_{date_time_str}"f"{'_smote' if smote else ''}{'_pca' if pca else ''}.png")
-    plt.savefig(combined_roc_filename, dpi=300)
+    plt.savefig(combined_roc_filename, dpi=300, bbox_inches="tight")
     plt.close()
     print(f"Combined ROC curve for all models saved to {combined_roc_filename}")
 
@@ -790,21 +790,27 @@ if __name__ == "__main__":
         else:
             results_dir = "./results/model_performance/"
 
+        # Create the results directory if it does not exist
+        if not os.path.exists(results_dir):
+            os.makedirs(results_dir)
+
         # Calculate the correlation matrix and round values for better readability.
         correlation_table = X_preprocessed_df.corr().round(2)
 
         # Create a heatmap of the correlation matrix
         plt.figure(figsize=(12, 10))
-        sns.heatmap(correlation_table, annot=True, cmap="coolwarm", vmin=-1, vmax=1)
-        plt.title("Feature Correlations")
+        sns.heatmap(correlation_table, annot=True, cmap="coolwarm", vmin=-1, vmax=1, annot_kws={"size": 12})
+        plt.xticks(fontsize=12)
+        plt.yticks(fontsize=12)
+        plt.title("Feature Correlation")
         plt.tight_layout()
 
         # Save the heatmap as a high-resolution PNG image.
-        plt.savefig(results_dir + "correlation_table.png", dpi=300)
+        plt.savefig(results_dir + "correlation_matrix.png", dpi=300)
         plt.close()
 
         # Save the correlation table as a CSV file for further analysis.
-        correlation_table.to_csv(results_dir + "correlation_table.csv")
+        correlation_table.to_csv(results_dir + "correlation_matrix.csv")
 
     # Split the preprocessed data into training and testing sets (70% training, 30% testing) using a fixed random state for reproducibility.
     X_train, X_test, y_train, y_test = train_test_split(X_preprocessed_df, y, test_size=0.3, random_state=42)
