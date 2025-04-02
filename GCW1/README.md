@@ -74,7 +74,7 @@ shiny run --reload app.py
 ## Authors
 
 - Shaan Ali Remani  
-- José Pedro Pessoa Dos Santos  
+- José Pedro Pessoa dos Santos  
 - Chin-Lan Chen  
 - Poh Har Yap
 
