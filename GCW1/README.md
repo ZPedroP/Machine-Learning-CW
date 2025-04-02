@@ -55,15 +55,14 @@ The app is aimed at non-technical stakeholders interested in understanding how m
 Clone the repository and run the model or launch the app:
 
 ```bash
-git clone https://github.com/RemaniSA/Decision-Tree-and-Random-Forest-Project.git
-cd Decision-Tree-and-Random-Forest-Project
+git clone https://github.com/ZPedroP/Machine-Learning-CW.git
+cd GCW1
 pip install -r requirements.txt  # or install packages individually
 ```
 
 To explore the Shiny app (Python):
 
 ```bash
-cd app/
 shiny run --reload app.py
 ```
 
