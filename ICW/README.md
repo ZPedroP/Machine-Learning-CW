@@ -66,6 +66,53 @@ LDA achieved the highest performance overall, followed closely by Logistic Regre
 ![ROC Curves with SMOTE](https://github.com/ZPedroP/Machine-Learning-CW/blob/main/ICW/results/model_performance/smote/combined_roc_curves_2025-03-21_00-46-31_smote.png)  
 *Figure 4: ROC Curves with SMOTE*
 
+<p align="center">
+  <img src="https://github.com/ZPedroP/Machine-Learning-CW/blob/main/ICW/results/model_performance/combined_roc_curves_2025-03-21_00-27-10.png" width="500"/>
+  <br>
+  <em>Figure 1: ROC Curves (Baseline)</em>
+</p>
+
+<p align="center">
+  <img src="https://github.com/ZPedroP/Machine-Learning-CW/blob/main/ICW/results/model_performance/smote_pca/combined_roc_curves_2025-03-21_00-52-52_smote_pca.png" width="500"/>
+  <br>
+  <em>Figure 2: ROC Curves with SMOTE and PCA</em>
+</p>
+
+<p align="center">
+  <img src="https://github.com/ZPedroP/Machine-Learning-CW/blob/main/ICW/results/model_performance/pca/combined_roc_curves_2025-03-21_00-51-01_pca.png" width="500"/>
+  <br>
+  <em>Figure 3: ROC Curves with PCA</em>
+</p>
+
+<p align="center">
+  <img src="https://github.com/ZPedroP/Machine-Learning-CW/blob/main/ICW/results/model_performance/smote/combined_roc_curves_2025-03-21_00-46-31_smote.png" width="500"/>
+  <br>
+  <em>Figure 4: ROC Curves with SMOTE</em>
+</p>
+
+<table align="center">
+  <tr>
+    <td align="center">
+      <img src="https://github.com/ZPedroP/Machine-Learning-CW/blob/main/ICW/results/model_performance/combined_roc_curves_2025-03-21_00-27-10.png" width="400"/><br>
+      <em>Figure 1: ROC Curves (Baseline)</em>
+    </td>
+    <td align="center">
+      <img src="https://github.com/ZPedroP/Machine-Learning-CW/blob/main/ICW/results/model_performance/smote_pca/combined_roc_curves_2025-03-21_00-52-52_smote_pca.png" width="400"/><br>
+      <em>Figure 2: ROC Curves with SMOTE and PCA</em>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <img src="https://github.com/ZPedroP/Machine-Learning-CW/blob/main/ICW/results/model_performance/pca/combined_roc_curves_2025-03-21_00-51-01_pca.png" width="400"/><br>
+      <em>Figure 3: ROC Curves with PCA</em>
+    </td>
+    <td align="center">
+      <img src="https://github.com/ZPedroP/Machine-Learning-CW/blob/main/ICW/results/model_performance/smote/combined_roc_curves_2025-03-21_00-46-31_smote.png" width="400"/><br>
+      <em>Figure 4: ROC Curves with SMOTE</em>
+    </td>
+  </tr>
+</table>
+
 ## Repository Structure
 
 ```
@@ -117,9 +164,9 @@ ICW/
 
 ## Author
 
-José Santos
+José Pedro Santos
 
-# Machine Learning for Quantitative Professionals Coursework
+# Coursework Brief
  
 ![ICW Cousework for Machine Learning for Quantitative Professionals - Page 1](https://github.com/ZPedroP/Machine-Learning-CW/blob/main/ICW/images/ICW_2025_Page_1.jpg)
 

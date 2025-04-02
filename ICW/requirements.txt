@@ -1,0 +1,8 @@
+imbalanced-learn==0.13.0
+ISLP==0.4.0
+matplotlib==3.9.2
+matplotlib-inline==0.1.7
+numpy==1.26.4
+pandas==2.2.2
+scikit-learn==1.5.2
+seaborn==0.13.2
