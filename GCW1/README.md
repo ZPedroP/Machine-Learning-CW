@@ -19,13 +19,15 @@ Key stages of the project:
 
 ```
 Decision-Tree-and-Random-Forest-Project/
-├── app/                             # Shiny app implementation
-├── Decision_Tree_RF_Model.ipynb     # Core model development notebook
-├── dataset/                         # Cleaned student performance data
-├── Images/                          # Visualisations and performance plots
-├── Task.pdf                         # Coursework brief
+├── datasets/                                      # Cleaned student performance data
+├── images/                                        # Visualisations and performance plots
 ├── Decision Tree and Random Forest for Student Performance Prediction.pdf  # Final report
-└── README.md
+├── README.md                                      # Project overview and instructions
+├── Task.pdf                                       # Coursework brief
+├── app.py                                         # Script to run the app
+├── requirements.txt                               # Python dependencies
+├── student-performance.ipynb                      # Jupyter notebook for EDA and modeling
+└── student_performance.py                         # Python script with model logic
 ```
 
 ## Summary of Results
