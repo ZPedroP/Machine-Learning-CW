@@ -56,7 +56,7 @@ Clone the repository and run the model or launch the app:
 
 ```bash
 git clone https://github.com/ZPedroP/Machine-Learning-CW.git
-cd GCW1
+cd Machine-Learning-CW/GCW1
 pip install -r requirements.txt  # or install packages individually
 ```
 
