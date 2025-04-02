@@ -54,42 +54,6 @@ LDA achieved the highest performance overall, followed closely by Logistic Regre
 
 ### ROC Curve Comparisons
 
-![ROC Curves](https://github.com/ZPedroP/Machine-Learning-CW/blob/main/ICW/results/model_performance/combined_roc_curves_2025-03-21_00-27-10.png)  
-*Figure 1: ROC Curves (Baseline)*
-
-![ROC Curves with SMOTE and PCA](https://github.com/ZPedroP/Machine-Learning-CW/blob/main/ICW/results/model_performance/smote_pca/combined_roc_curves_2025-03-21_00-52-52_smote_pca.png)  
-*Figure 2: ROC Curves with SMOTE and PCA*
-
-![ROC Curves with PCA](https://github.com/ZPedroP/Machine-Learning-CW/blob/main/ICW/results/model_performance/pca/combined_roc_curves_2025-03-21_00-51-01_pca.png)  
-*Figure 3: ROC Curves with PCA*
-
-![ROC Curves with SMOTE](https://github.com/ZPedroP/Machine-Learning-CW/blob/main/ICW/results/model_performance/smote/combined_roc_curves_2025-03-21_00-46-31_smote.png)  
-*Figure 4: ROC Curves with SMOTE*
-
-<p align="center">
-  <img src="https://github.com/ZPedroP/Machine-Learning-CW/blob/main/ICW/results/model_performance/combined_roc_curves_2025-03-21_00-27-10.png" width="500"/>
-  <br>
-  <em>Figure 1: ROC Curves (Baseline)</em>
-</p>
-
-<p align="center">
-  <img src="https://github.com/ZPedroP/Machine-Learning-CW/blob/main/ICW/results/model_performance/smote_pca/combined_roc_curves_2025-03-21_00-52-52_smote_pca.png" width="500"/>
-  <br>
-  <em>Figure 2: ROC Curves with SMOTE and PCA</em>
-</p>
-
-<p align="center">
-  <img src="https://github.com/ZPedroP/Machine-Learning-CW/blob/main/ICW/results/model_performance/pca/combined_roc_curves_2025-03-21_00-51-01_pca.png" width="500"/>
-  <br>
-  <em>Figure 3: ROC Curves with PCA</em>
-</p>
-
-<p align="center">
-  <img src="https://github.com/ZPedroP/Machine-Learning-CW/blob/main/ICW/results/model_performance/smote/combined_roc_curves_2025-03-21_00-46-31_smote.png" width="500"/>
-  <br>
-  <em>Figure 4: ROC Curves with SMOTE</em>
-</p>
-
 <table align="center">
   <tr>
     <td align="center">
@@ -117,13 +81,14 @@ LDA achieved the highest performance overall, followed closely by Logistic Regre
 
 ```
 ICW/
-├── datasets/                 # Dataset files
-├── images/                   # Plots and figures
-├── results/                  # Evaluation metrics, confusion matrices, ROC curves
-├── heart_disease.py          # Main analysis script
+├── datasets/                 # Dataset and data source files
+├── images/                   # Raw images and supplementary materials
+├── results/                  # Model evaluation results, plots, and metrics
 ├── README.md                 # Project overview and instructions
-├── Report.pdf                # Final report
-└── ICW-2025.pdf              # Coursework specification
+├── Report.pdf                # Final report submitted for assessment
+├── Task.pdf                  # Coursework brief and task description
+├── heart_disease.py          # Main analysis and model training script
+└── requirements.txt          # Minimal project dependencies
 ```
 
 ## How to Run
@@ -153,14 +118,16 @@ ICW/
 
 ## Requirements
 
-- Python 3.8+
-- pandas
-- numpy
-- matplotlib
-- seaborn
-- scikit-learn
-- imbalanced-learn
-- ISLP (for confusion tables)
+To run this project, the following Python packages are required:
+
+- pandas==2.2.2
+- numpy==1.26.4
+- matplotlib==3.9.2
+- matplotlib-inline==0.1.7
+- seaborn==0.13.2
+- scikit-learn==1.5.2
+- imbalanced-learn==0.13.0
+- ISLP==0.4.0
 
 ## Author
 
