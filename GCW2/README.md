@@ -23,7 +23,6 @@ Can we uncover meaningful groupings among films based on commercial and critical
 Unsupervised-Learning-Project/
 ├── datasets/
 ├── images/
-├── .gitignore
 ├── README.md
 ├── Report.pdf
 ├── Task.pdf
@@ -54,7 +53,6 @@ pip install -r requirements.txt
 ```bash
 git clone https://github.com/ZPedroP/Machine-Learning-CW.git
 cd Machine-Learning-CW/GCW2
-pip install -r requirements.txt  # or install packages individually
 python imdb_movie_analysis.py
 ```
 
