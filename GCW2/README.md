@@ -76,4 +76,4 @@ Ensure:
 
 # Coursework Brief
  
-![GCW2 Cousework for Machine Learning for Quantitative Professionals](https://github.com/ZPedroP/Machine-Learning-CW/blob/main/GCW2/Task.pdf)
+![GCW2 Cousework for Machine Learning for Quantitative Professionals](https://github.com/ZPedroP/Machine-Learning-CW/blob/main/GCW2/images/Task.jpg)
