@@ -1,4 +1,4 @@
-# Unsupervised Learning Project
+# Unsupervised Learning Project (2024/25)
 
 This project was completed as part of the MSc Mathematical Trading and Finance programme at Bayes Business School (formerly Cass). It applies unsupervised learning methods to understand latent structure in film characteristics across 50 top-rated IMDB movies. The focus lies in dimensionality reduction through Principal Component Analysis (PCA) and clustering via both KMeans and Hierarchical methods.
 
@@ -52,8 +52,9 @@ pip install -r requirements.txt
 ## How to Run
 
 ```bash
-git clone https://github.com/RemaniSA/Unsupervised-Learning-Project.git
-cd Unsupervised-Learning-Project
+git clone https://github.com/ZPedroP/Machine-Learning-CW.git
+cd Machine-Learning-CW/GCW2
+pip install -r requirements.txt  # or install packages individually
 python imdb_movie_analysis.py
 ```
 
