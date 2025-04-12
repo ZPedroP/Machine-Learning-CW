@@ -54,54 +54,6 @@ LDA achieved the highest performance overall, followed closely by Logistic Regre
 
 ### ROC Curve Comparisons
 
-<div style="display: flex; flex-wrap: wrap; justify-content: center; margin-top: 10px;">
-
-  <div style="flex-basis: 100%; max-width: 500px; margin: 10px; text-align: center;">
-    <img src="https://github.com/ZPedroP/Machine-Learning-CW/blob/main/ICW/results/model_performance/combined_roc_curves_2025-03-21_00-27-10.png" style="width: 100%; height: auto;" />
-    <p><em>Figure 1: ROC Curves (Baseline)</em></p>
-  </div>
-
-  <div style="flex-basis: 100%; max-width: 500px; margin: 10px; text-align: center;">
-    <img src="https://github.com/ZPedroP/Machine-Learning-CW/blob/main/ICW/results/model_performance/smote_pca/combined_roc_curves_2025-03-21_00-52-52_smote_pca.png" style="width: 100%; height: auto;" />
-    <p><em>Figure 2: ROC Curves with SMOTE and PCA</em></p>
-  </div>
-
-  <div style="flex-basis: 100%; max-width: 500px; margin: 10px; text-align: center;">
-    <img src="https://github.com/ZPedroP/Machine-Learning-CW/blob/main/ICW/results/model_performance/pca/combined_roc_curves_2025-03-21_00-51-01_pca.png" style="width: 100%; height: auto;" />
-    <p><em>Figure 3: ROC Curves with PCA</em></p>
-  </div>
-
-  <div style="flex-basis: 100%; max-width: 500px; margin: 10px; text-align: center;">
-    <img src="https://github.com/ZPedroP/Machine-Learning-CW/blob/main/ICW/results/model_performance/smote/combined_roc_curves_2025-03-21_00-46-31_smote.png" style="width: 100%; height: auto;" />
-    <p><em>Figure 4: ROC Curves with SMOTE</em></p>
-  </div>
-
-</div>
-
-<div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 24px;">
-
-  <div style="flex: 1 1 300px; max-width: 48%; text-align: center;">
-    <img src="https://github.com/ZPedroP/Machine-Learning-CW/blob/main/ICW/results/model_performance/combined_roc_curves_2025-03-21_00-27-10.png" style="width: 100%; height: auto;" />
-    <p><em>Figure 1: ROC Curves (Baseline)</em></p>
-  </div>
-
-  <div style="flex: 1 1 300px; max-width: 48%; text-align: center;">
-    <img src="https://github.com/ZPedroP/Machine-Learning-CW/blob/main/ICW/results/model_performance/smote_pca/combined_roc_curves_2025-03-21_00-52-52_smote_pca.png" style="width: 100%; height: auto;" />
-    <p><em>Figure 2: ROC Curves with SMOTE and PCA</em></p>
-  </div>
-
-  <div style="flex: 1 1 300px; max-width: 48%; text-align: center;">
-    <img src="https://github.com/ZPedroP/Machine-Learning-CW/blob/main/ICW/results/model_performance/pca/combined_roc_curves_2025-03-21_00-51-01_pca.png" style="width: 100%; height: auto;" />
-    <p><em>Figure 3: ROC Curves with PCA</em></p>
-  </div>
-
-  <div style="flex: 1 1 300px; max-width: 48%; text-align: center;">
-    <img src="https://github.com/ZPedroP/Machine-Learning-CW/blob/main/ICW/results/model_performance/smote/combined_roc_curves_2025-03-21_00-46-31_smote.png" style="width: 100%; height: auto;" />
-    <p><em>Figure 4: ROC Curves with SMOTE</em></p>
-  </div>
-
-</div>
-
 <table>
   <tr>
     <td width="50%" align="center">
