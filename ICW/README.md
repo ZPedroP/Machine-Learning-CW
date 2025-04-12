@@ -80,29 +80,6 @@ LDA achieved the highest performance overall, followed closely by Logistic Regre
   </tr>
 </table>
 
-<table>
-  <tr>
-    <td width="50%" align="center" style="padding: 12px;">
-      <img src="https://github.com/ZPedroP/Machine-Learning-CW/blob/main/ICW/results/model_performance/combined_roc_curves_2025-03-21_00-27-10.png" width="100%">
-      <p><em>Figure 1: ROC Curves (Baseline)</em></p>
-    </td>
-    <td width="50%" align="center" style="padding: 12px;">
-      <img src="https://github.com/ZPedroP/Machine-Learning-CW/blob/main/ICW/results/model_performance/smote_pca/combined_roc_curves_2025-03-21_00-52-52_smote_pca.png" width="100%">
-      <p><em>Figure 2: ROC Curves with SMOTE and PCA</em></p>
-    </td>
-  </tr>
-  <tr>
-    <td width="50%" align="center" style="padding: 12px;">
-      <img src="https://github.com/ZPedroP/Machine-Learning-CW/blob/main/ICW/results/model_performance/pca/combined_roc_curves_2025-03-21_00-51-01_pca.png" width="100%">
-      <p><em>Figure 3: ROC Curves with PCA</em></p>
-    </td>
-    <td width="50%" align="center" style="padding: 12px;">
-      <img src="https://github.com/ZPedroP/Machine-Learning-CW/blob/main/ICW/results/model_performance/smote/combined_roc_curves_2025-03-21_00-46-31_smote.png" width="100%">
-      <p><em>Figure 4: ROC Curves with SMOTE</em></p>
-    </td>
-  </tr>
-</table>
-
 ## Repository Structure
 
 ```
@@ -117,25 +94,22 @@ ICW/
 └── requirements.txt          # Minimal project dependencies
 ```
 
+## Requirements
+
+```bash
+pip install -r requirements.txt
+```
+
 ## How to Run
 
 1. **Clone the repository**:
    ```bash
    git clone https://github.com/ZPedroP/Machine-Learning-CW.git
    cd Machine-Learning-CW/ICW
-   ```
-
-2. **Install required packages**:
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-3. **Execute the main script**:
-   ```bash
    python heart_disease.py
    ```
 
-4. **Optional flags**:
+2. **Optional flags**:
    You can enable PCA or SMOTE by modifying these lines in `heart_disease.py`:
    ```python
    smote = 1  # enables class balancing
