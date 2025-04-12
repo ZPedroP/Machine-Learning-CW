@@ -12,14 +12,14 @@ This repository is a comprehensive collection of machine learning projects devel
 - **Presentation:**
   - An interactive Shiny app is provided to explain the model structure, methodologies, and performance metrics in a manner accessible to non-technical audiences.
 
-### ICW: Coronary Heart Disease Classification
-- **Objective:** Investigate whether a linear or nonlinear decision boundary best classifies Coronary Heart Disease (CHD) in a high-risk male population from the Western Cape, South Africa.
-- **Approach:**
-  - Analysis involves comparing multiple classification approaches to determine the most effective decision boundary.
-  - Emphasis on understanding the interplay between various risk factors and their influence on CHD classification.
-
 ### GCW2: Analysing Film Characteristics
 - **Objective:** Utilise unsupervised learning methods to explore latent structures in film characteristics across 50 top-rated IMDb movies.
 - **Approach:**
   - Dimensionality reduction is performed using Principal Component Analysis (PCA) to identify key patterns and features within the dataset.
   - Clustering techniques, including KMeans and Hierarchical clustering, are applied to group films based on their underlying characteristics.
+
+### ICW: Coronary Heart Disease Classification
+- **Objective:** Investigate whether a linear or nonlinear decision boundary best classifies Coronary Heart Disease (CHD) in a high-risk male population from the Western Cape, South Africa.
+- **Approach:**
+  - Analysis involves comparing multiple classification approaches to determine the most effective decision boundary.
+  - Emphasis on understanding the interplay between various risk factors and their influence on CHD classification.
